@@ -1,18 +1,15 @@
 // Google OAuth - Initiate OAuth flow
 
-import { getCloudflareEnv } from '~/server/utils/db'
-
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const cfEnv = getCloudflareEnv(event)
 
-  const clientId = cfEnv.NUXT_PUBLIC_GOOGLE_CLIENT_ID || config.public.googleClientId
-  const redirectUri = cfEnv.NUXT_PUBLIC_GOOGLE_REDIRECT_URI || config.public.googleRedirectUri
+  const clientId = config.googleClientId || config.public.googleClientId
+  const redirectUri = config.googleRedirectUri || config.public.googleRedirectUri
 
   if (!clientId || !redirectUri) {
     throw createError({
       statusCode: 500,
-      message: 'Google OAuth not configured. Set NUXT_PUBLIC_GOOGLE_CLIENT_ID and NUXT_PUBLIC_GOOGLE_REDIRECT_URI.',
+      message: 'Google OAuth not configured. Set NUXT_GOOGLE_CLIENT_ID and NUXT_GOOGLE_REDIRECT_URI.',
     })
   }
 

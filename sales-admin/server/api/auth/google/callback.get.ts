@@ -1,6 +1,6 @@
 // Google OAuth callback handler
 
-import { getDB, getCloudflareEnv, queryOne, execute, uuid } from '~/server/utils/db-dev'
+import { getDB, queryOne, execute, uuid } from '~/server/utils/db-dev'
 import { createSession } from '~/server/utils/session'
 
 interface GoogleTokenResponse {
@@ -26,7 +26,6 @@ interface GoogleUserInfo {
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const cfEnv = getCloudflareEnv(event)
   const query = getQuery(event)
 
   const code = query.code as string | undefined
@@ -56,9 +55,9 @@ export default defineEventHandler(async (event) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: cfEnv.NUXT_PUBLIC_GOOGLE_CLIENT_ID || config.public.googleClientId,
-        client_secret: cfEnv.NUXT_GOOGLE_CLIENT_SECRET || config.googleClientSecret,
-        redirect_uri: cfEnv.NUXT_PUBLIC_GOOGLE_REDIRECT_URI || config.public.googleRedirectUri,
+        client_id: config.googleClientId || config.public.googleClientId,
+        client_secret: config.googleClientSecret,
+        redirect_uri: config.googleRedirectUri || config.public.googleRedirectUri,
         grant_type: 'authorization_code',
       }),
     })

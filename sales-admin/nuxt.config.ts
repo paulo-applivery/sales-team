@@ -41,12 +41,15 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    // Server-only
+    // Server-only (read from NUXT_ env vars at runtime)
     googleClientSecret: '',
+    googleClientId: '',
+    googleRedirectUri: '',
+    appUrl: '',
     sessionSecret: '',
     geminiApiKey: '',
 
-    // Public (client-side accessible)
+    // Public (client-side accessible, baked at build time)
     public: {
       googleClientId: '',
       googleRedirectUri: '',
