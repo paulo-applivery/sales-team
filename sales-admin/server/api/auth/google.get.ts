@@ -1,12 +1,11 @@
 // Google OAuth - Initiate OAuth flow
 
+import { getAppConfig } from '~/server/utils/env'
+
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
+  const appConfig = getAppConfig(event)
 
-  const clientId = config.googleClientId || config.public.googleClientId
-  const redirectUri = config.googleRedirectUri || config.public.googleRedirectUri
-
-  if (!clientId || !redirectUri) {
+  if (!appConfig.googleClientId || !appConfig.googleRedirectUri) {
     throw createError({
       statusCode: 500,
       message: 'Google OAuth not configured. Set NUXT_GOOGLE_CLIENT_ID and NUXT_GOOGLE_REDIRECT_URI.',
@@ -18,15 +17,15 @@ export default defineEventHandler(async (event) => {
 
   setCookie(event, 'google_oauth_state', state, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'lax',
     maxAge: 600,
     path: '/',
   })
 
   const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
+    client_id: appConfig.googleClientId,
+    redirect_uri: appConfig.googleRedirectUri,
     response_type: 'code',
     scope: 'openid email profile',
     state,

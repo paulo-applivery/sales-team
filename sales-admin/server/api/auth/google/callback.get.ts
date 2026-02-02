@@ -2,6 +2,7 @@
 
 import { getDB, queryOne, execute, uuid } from '~/server/utils/db-dev'
 import { createSession } from '~/server/utils/session'
+import { getAppConfig } from '~/server/utils/env'
 
 interface GoogleTokenResponse {
   access_token: string
@@ -25,7 +26,7 @@ interface GoogleUserInfo {
 }
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
+  const appConfig = getAppConfig(event)
   const query = getQuery(event)
 
   const code = query.code as string | undefined
@@ -55,9 +56,9 @@ export default defineEventHandler(async (event) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: config.googleClientId || config.public.googleClientId,
-        client_secret: config.googleClientSecret,
-        redirect_uri: config.googleRedirectUri || config.public.googleRedirectUri,
+        client_id: appConfig.googleClientId,
+        client_secret: appConfig.googleClientSecret,
+        redirect_uri: appConfig.googleRedirectUri,
         grant_type: 'authorization_code',
       }),
     })
