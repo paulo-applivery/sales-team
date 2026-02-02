@@ -90,7 +90,78 @@
         </div>
       </SettingsCard>
 
-      <!-- Card 2: Prompts -->
+      <!-- Card 2: Install Extension -->
+      <SettingsCard title="Install Extension" subtitle="Download and install the Sales Extension for Chrome">
+        <template #icon>
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+        </template>
+
+        <div class="space-y-6">
+          <!-- Download button -->
+          <div class="flex items-center gap-4">
+            <a
+              href="/sales-extension.zip"
+              download
+              class="btn-primary inline-flex items-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Download Extension (.zip)
+            </a>
+            <span class="text-xs text-white/30">sales-extension.zip</span>
+          </div>
+
+          <!-- Installation steps -->
+          <div class="space-y-3">
+            <h4 class="text-sm font-semibold text-white/80">Installation Steps</h4>
+            <ol class="space-y-3">
+              <li class="flex gap-3">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand/20 text-brand-light text-xs font-bold flex items-center justify-center">1</span>
+                <div>
+                  <p class="text-sm text-white/70">Download the extension zip file using the button above</p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand/20 text-brand-light text-xs font-bold flex items-center justify-center">2</span>
+                <div>
+                  <p class="text-sm text-white/70">Unzip the file to a folder on your computer</p>
+                  <p class="text-xs text-white/30 mt-0.5">Remember where you extract it — you'll need the path</p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand/20 text-brand-light text-xs font-bold flex items-center justify-center">3</span>
+                <div>
+                  <p class="text-sm text-white/70">Open Chrome and go to <code class="text-brand-light bg-brand/10 px-1.5 py-0.5 rounded text-xs font-mono">chrome://extensions</code></p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand/20 text-brand-light text-xs font-bold flex items-center justify-center">4</span>
+                <div>
+                  <p class="text-sm text-white/70">Enable <strong class="text-white">Developer mode</strong> (toggle in the top-right corner)</p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand/20 text-brand-light text-xs font-bold flex items-center justify-center">5</span>
+                <div>
+                  <p class="text-sm text-white/70">Click <strong class="text-white">Load unpacked</strong> and select the <code class="text-brand-light bg-brand/10 px-1.5 py-0.5 rounded text-xs font-mono">dist</code> folder inside the unzipped directory</p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand/20 text-brand-light text-xs font-bold flex items-center justify-center">6</span>
+                <div>
+                  <p class="text-sm text-white/70">Click the extension icon in the toolbar and sign in with your Google account</p>
+                  <p class="text-xs text-white/30 mt-0.5">You need to be registered as a user in the dashboard first</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </SettingsCard>
+
+      <!-- Card 3: Prompts -->
       <SettingsCard title="Prompts" subtitle="Configure guiding principles and message angles">
         <template #icon>
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
