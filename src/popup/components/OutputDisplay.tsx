@@ -29,22 +29,15 @@ export default function OutputDisplay({
   }
 
   return (
-    <div className="card animate-slide-in-up">
+    <div className="output-display">
       {/* Variant Selector */}
       {variants.length > 1 && (
-        <div className="flex gap-2 mb-3">
+        <div className="variant-buttons">
           {variants.map((_, index) => (
             <button
               key={index}
               onClick={() => onVariantChange?.(index)}
-              className={`
-                px-3 py-1 text-sm rounded-md transition-colors
-                ${
-                  selectedVariant === index
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-secondary-200 text-secondary-700 hover:bg-secondary-300'
-                }
-              `}
+              className={`variant-button ${selectedVariant === index ? 'active' : ''}`}
             >
               Variant {index + 1}
             </button>
@@ -53,18 +46,13 @@ export default function OutputDisplay({
       )}
 
       {/* Content Display */}
-      <div className="bg-secondary-50 rounded-lg p-4 mb-3">
-        <pre className="whitespace-pre-wrap text-sm text-secondary-900 font-sans">
-          {content}
-        </pre>
+      <div className="card">
+        <pre className="output-content">{content}</pre>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
-        <button
-          onClick={handleCopy}
-          className="btn-primary flex-1 flex items-center justify-center gap-2"
-        >
+      <div className="actions-row">
+        <button onClick={handleCopy}>
           {copied ? (
             <>
               <span>✓</span>

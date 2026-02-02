@@ -9,21 +9,20 @@ export default function TextArea({
   error, 
   helperText,
   className = '',
+  rows = 3,
   ...props 
 }: TextAreaProps) {
   return (
-    <div className="mb-4">
-      <label className="label">
-        {label}
-      </label>
+    <div className="form-group">
+      <label>{label}</label>
       <textarea
-        className={`input-field resize-none ${error ? 'border-red-500 focus:ring-red-500' : ''} ${className}`}
-        rows={3}
+        className={className}
+        rows={rows}
         {...props}
       />
-      {error && <p className="error-text">{error}</p>}
+      {error && <p className="error-message">{error}</p>}
       {helperText && !error && (
-        <p className="text-xs text-secondary-500 mt-1">{helperText}</p>
+        <p className="helper-text">{helperText}</p>
       )}
     </div>
   );

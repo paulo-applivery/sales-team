@@ -25,6 +25,13 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
+// Handle extension icon click to open side panel
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id) {
+    chrome.sidePanel.open({ tabId: tab.id });
+  }
+});
+
 // Handle messages from popup and content scripts
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   const { type, payload } = request;

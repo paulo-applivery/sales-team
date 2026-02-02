@@ -31,19 +31,19 @@ function App() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white">
+    <div id="main-container">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-secondary-200">
-        <h1 className="text-lg font-semibold text-secondary-900">
-          Sales Extension
-        </h1>
+      <div className="header">
+        <div className="header-brand">
+          <h1>Sales Extension</h1>
+        </div>
       </div>
 
       {/* Tab Navigation */}
       <TabNavigation />
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="tabs">
         {renderTab()}
       </div>
     </div>

@@ -34,7 +34,7 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
-        popup: resolve(__dirname, 'src/popup/index.html'),
+        sidepanel: resolve(__dirname, 'public/sidepanel.jsx'),
         background: resolve(__dirname, 'src/background/service-worker.ts'),
         content: resolve(__dirname, 'src/content/content.ts'),
       },
@@ -46,10 +46,18 @@ export default defineConfig({
           if (chunkInfo.name === 'content') {
             return 'content/content.js';
           }
+          if (chunkInfo.name === 'sidepanel') {
+            return 'sidepanel.js';
+          }
           return '[name]/[name].js';
         },
         chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === 'sidepanel.css') {
+            return 'sidepanel.css';
+          }
+          return 'assets/[name]-[hash].[ext]';
+        },
       },
     },
   },
