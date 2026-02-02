@@ -2,10 +2,11 @@
 // Accepts requests from both the dashboard (cookie auth) and extension (bearer token)
 
 import { requireAuth } from '~/server/utils/session'
-import { getDB, queryOne } from '~/server/utils/db-dev'
+import { getDB, queryOne, execute, uuid } from '~/server/utils/db-dev'
+import { estimateCost } from '~/server/utils/pricing'
 
 export default defineEventHandler(async (event) => {
-  await requireAuth(event)
+  const user = await requireAuth(event)
 
   const body = await readBody(event)
   const { systemInstruction, userMessage } = body
@@ -109,6 +110,25 @@ export default defineEventHandler(async (event) => {
     const data = await response.json()
     const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
+    // Track token usage
+    const usageMetadata = data.usageMetadata || {}
+    const promptTokens = usageMetadata.promptTokenCount || 0
+    const completionTokens = usageMetadata.candidatesTokenCount || 0
+    const totalTokens = usageMetadata.totalTokenCount || 0
+    const cost = estimateCost(model, promptTokens, completionTokens)
+
+    // Save usage to database (fire-and-forget, don't block response)
+    try {
+      await execute(
+        db,
+        `INSERT INTO token_usage (id, user_id, model, prompt_tokens, completion_tokens, total_tokens, estimated_cost, request_type, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'generate', datetime('now'))`,
+        [uuid(), user.id, model, promptTokens, completionTokens, totalTokens, cost]
+      )
+    } catch (err) {
+      console.error('Failed to save token usage:', err)
+    }
+
     // Parse variants
     const variants = generatedText.split(/---+|\n\nVARIANT \d+:?\n\n/i).filter((v: string) => v.trim())
 
@@ -116,6 +136,12 @@ export default defineEventHandler(async (event) => {
       success: true,
       content: variants[0]?.trim() || generatedText.trim(),
       variants: variants.length > 1 ? variants.map((v: string) => v.trim()) : undefined,
+      usage: {
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        estimatedCost: cost,
+      },
     }
   } catch (error: any) {
     console.error('Generate error:', error)

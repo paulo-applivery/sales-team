@@ -313,7 +313,82 @@
         </div>
       </SettingsCard>
 
-      <!-- Card 5: Branding Reference -->
+      <!-- Card 5: Usage Stats (admin only) -->
+      <SettingsCard v-if="isAdmin" title="Usage Stats" subtitle="Token consumption and estimated costs per user">
+        <template #icon>
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+          </svg>
+        </template>
+
+        <div class="space-y-4">
+          <!-- Period filter -->
+          <div class="flex gap-2">
+            <button
+              v-for="p in usagePeriods"
+              :key="p.value"
+              @click="usagePeriod = p.value; loadUsageStats()"
+              :class="[
+                'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
+                usagePeriod === p.value
+                  ? 'bg-brand text-white'
+                  : 'bg-navy-800 text-white/50 hover:text-white/70 border border-white/5'
+              ]"
+            >
+              {{ p.label }}
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="loadingUsage" class="text-center py-8 text-white/40">Loading usage stats...</div>
+
+          <!-- No data -->
+          <div v-else-if="usageStats.users.length === 0" class="text-center py-8 text-white/40">No usage data for this period</div>
+
+          <!-- Stats table -->
+          <div v-else class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-white/5">
+                  <th class="text-left py-3 px-2 text-white/40 font-medium">User</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Requests</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Prompt</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Output</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Total Tokens</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Est. Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in usageStats.users" :key="u.id" class="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                  <td class="py-3 px-2">
+                    <div>
+                      <span class="text-white font-medium text-xs">{{ u.name }}</span>
+                      <p class="text-white/30 text-[10px]">{{ u.email }}</p>
+                    </div>
+                  </td>
+                  <td class="py-3 px-2 text-right text-white/60 tabular-nums">{{ u.totalRequests.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/40 tabular-nums text-xs">{{ u.promptTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/40 tabular-nums text-xs">{{ u.completionTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/60 tabular-nums">{{ u.totalTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-brand-light font-medium tabular-nums">{{ formatCost(u.totalCost) }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="border-t border-white/10">
+                  <td class="py-3 px-2 text-white/70 font-semibold text-xs">Total</td>
+                  <td class="py-3 px-2 text-right text-white/70 font-semibold tabular-nums">{{ usageStats.totals.totalRequests.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/50 tabular-nums text-xs">{{ usageStats.totals.promptTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/50 tabular-nums text-xs">{{ usageStats.totals.completionTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/70 font-semibold tabular-nums">{{ usageStats.totals.totalTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-brand-light font-bold tabular-nums">{{ formatCost(usageStats.totals.totalCost) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </SettingsCard>
+
+      <!-- Card 6: Branding Reference -->
       <SettingsCard title="Branding Reference" subtitle="Extension color palette" :default-open="false">
         <template #icon>
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -420,6 +495,54 @@ const deleteModal = reactive({
   user: null as any | null,
 })
 
+// Usage stats
+const loadingUsage = ref(false)
+const usagePeriod = ref('30d')
+const usagePeriods = [
+  { value: '7d', label: '7 Days' },
+  { value: '30d', label: '30 Days' },
+  { value: 'all', label: 'All Time' },
+]
+const usageStats = reactive({
+  users: [] as Array<{
+    id: string
+    name: string
+    email: string
+    totalRequests: number
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+    totalCost: number
+    lastUsed: string | null
+  }>,
+  totals: {
+    totalRequests: 0,
+    totalTokens: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    totalCost: 0,
+  },
+})
+
+function formatCost(cost: number): string {
+  if (cost === 0) return '$0.00'
+  if (cost < 0.01) return `$${cost.toFixed(4)}`
+  return `$${cost.toFixed(2)}`
+}
+
+async function loadUsageStats() {
+  loadingUsage.value = true
+  try {
+    const data = await $fetch<any>(`/api/usage?period=${usagePeriod.value}`)
+    usageStats.users = data.users || []
+    usageStats.totals = data.totals || { totalRequests: 0, totalTokens: 0, promptTokens: 0, completionTokens: 0, totalCost: 0 }
+  } catch (err) {
+    console.error('Failed to load usage stats:', err)
+  } finally {
+    loadingUsage.value = false
+  }
+}
+
 // Brand colors reference
 const brandColors = [
   { name: 'Background', hex: '#080D2B' },
@@ -466,6 +589,7 @@ onMounted(async () => {
 
   if (isAdmin.value) {
     loadUsers()
+    loadUsageStats()
   }
 })
 
