@@ -2,6 +2,14 @@ name = "sales-team"
 pages_build_output_dir = "dist"
 compatibility_date = "2024-01-01"
 
+[vars]
+NUXT_GOOGLE_CLIENT_ID = "459550601924-gipbi7dun46a0np5mvhrmodmnrq0o0uc.apps.googleusercontent.com"
+NUXT_GOOGLE_REDIRECT_URI = "https://sales-team.pages.dev/api/auth/google/callback"
+NUXT_APP_URL = "https://sales-team.pages.dev"
+NUXT_PUBLIC_GOOGLE_CLIENT_ID = "459550601924-gipbi7dun46a0np5mvhrmodmnrq0o0uc.apps.googleusercontent.com"
+NUXT_PUBLIC_GOOGLE_REDIRECT_URI = "https://sales-team.pages.dev/api/auth/google/callback"
+NUXT_PUBLIC_APP_URL = "https://sales-team.pages.dev"
+
 [[d1_databases]]
 binding = "sales_db"
 database_name = "sales-admin-db"
