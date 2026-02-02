@@ -1,0 +1,7 @@
+name = "sales-admin"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "sales_db"
+database_name = "sales-admin-db"
+database_id = "" # Fill in after creating: wrangler d1 create sales-admin-db
