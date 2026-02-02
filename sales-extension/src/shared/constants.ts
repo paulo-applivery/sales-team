@@ -4,7 +4,7 @@ export const APP_NAME = 'Sales Extension';
 export const APP_VERSION = '1.0.0';
 
 // Admin Backend URL
-export const ADMIN_API_URL = 'https://sales-admin.pages.dev';
+export const ADMIN_API_URL = 'https://sales-team.pages.dev';
 
 // Storage Keys
 export const STORAGE_KEYS = {
