@@ -100,7 +100,115 @@
         </div>
       </SettingsCard>
 
-      <!-- Card 2: API Configuration (admin only) -->
+      <!-- Card 2: Prompt Templates (admin only) -->
+      <SettingsCard v-if="isAdmin" title="Prompt Templates" subtitle="Full prompt templates sent to the AI. Use variables for dynamic content.">
+        <template #icon>
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+          </svg>
+        </template>
+
+        <div class="space-y-6">
+          <!-- Variable reference -->
+          <div class="bg-navy-800 rounded-xl p-4 border border-white/5">
+            <p class="text-xs font-semibold text-brand-light mb-2">Available Variables</p>
+            <div class="flex flex-wrap gap-1.5">
+              <code v-for="v in templateVars" :key="v" class="text-[10px] px-1.5 py-0.5 bg-brand/10 text-brand-light rounded font-mono">{{ wrapVar(v) }}</code>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex gap-1 bg-navy-800 rounded-lg p-1 border border-white/5">
+            <button
+              v-for="tab in promptTabs"
+              :key="tab.id"
+              @click="activePromptTab = tab.id"
+              :class="[
+                'flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all',
+                activePromptTab === tab.id
+                  ? 'bg-brand text-white'
+                  : 'text-white/50 hover:text-white/70'
+              ]"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+
+          <!-- Email System Prompt -->
+          <div v-show="activePromptTab === 'emailSystem'">
+            <label class="block text-sm font-medium text-white/70 mb-2">Email — System Instruction</label>
+            <p class="text-xs text-white/30 mb-3">The main prompt that defines email writing behavior, rules, and company context.</p>
+            <textarea
+              v-model="prompts.emailSystemPrompt"
+              rows="18"
+              class="input-field font-mono text-xs leading-relaxed"
+            />
+          </div>
+
+          <!-- LinkedIn System Prompt -->
+          <div v-show="activePromptTab === 'linkedinSystem'">
+            <label class="block text-sm font-medium text-white/70 mb-2">LinkedIn — System Instruction</label>
+            <p class="text-xs text-white/30 mb-3">The main prompt that defines LinkedIn message writing behavior, rules, and company context.</p>
+            <textarea
+              v-model="prompts.linkedinSystemPrompt"
+              rows="18"
+              class="input-field font-mono text-xs leading-relaxed"
+            />
+          </div>
+
+          <!-- Email User Prompt -->
+          <div v-show="activePromptTab === 'emailUser'">
+            <label class="block text-sm font-medium text-white/70 mb-2">Email — User Message (with prospect context)</label>
+            <p class="text-xs text-white/30 mb-3">Sent when the extension has scraped prospect data from the current page.</p>
+            <textarea
+              v-model="prompts.emailUserPrompt"
+              rows="6"
+              class="input-field font-mono text-xs leading-relaxed"
+            />
+            <label class="block text-sm font-medium text-white/70 mb-2 mt-5">Email — Fallback (no context)</label>
+            <p class="text-xs text-white/30 mb-3">Used when no page content is available.</p>
+            <textarea
+              v-model="prompts.emailNoContextPrompt"
+              rows="3"
+              class="input-field font-mono text-xs leading-relaxed"
+            />
+          </div>
+
+          <!-- LinkedIn User Prompt -->
+          <div v-show="activePromptTab === 'linkedinUser'">
+            <label class="block text-sm font-medium text-white/70 mb-2">LinkedIn — User Message (with prospect context)</label>
+            <p class="text-xs text-white/30 mb-3">Sent when the extension has scraped prospect data from the current page.</p>
+            <textarea
+              v-model="prompts.linkedinUserPrompt"
+              rows="6"
+              class="input-field font-mono text-xs leading-relaxed"
+            />
+            <label class="block text-sm font-medium text-white/70 mb-2 mt-5">LinkedIn — Fallback (no context)</label>
+            <p class="text-xs text-white/30 mb-3">Used when no page content is available.</p>
+            <textarea
+              v-model="prompts.linkedinNoContextPrompt"
+              rows="3"
+              class="input-field font-mono text-xs leading-relaxed"
+            />
+          </div>
+
+          <!-- Save button -->
+          <button
+            @click="savePrompts"
+            :disabled="savingPrompts"
+            class="btn-primary"
+          >
+            <svg v-if="savingPrompts" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            {{ savingPrompts ? 'Saving...' : 'Save Prompt Templates' }}
+          </button>
+          <p v-if="promptsSaved" class="text-sm text-green-400 mt-2">Saved!</p>
+        </div>
+      </SettingsCard>
+
+      <!-- Card 3: API Configuration (admin only) -->
       <SettingsCard v-if="isAdmin" title="API Configuration" subtitle="Gemini API key and model settings">
         <template #icon>
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -109,18 +217,10 @@
         </template>
 
         <div class="space-y-4">
-          <!-- API Key -->
           <div>
             <label class="block text-sm font-medium text-white/70 mb-2">Gemini API Key</label>
-            <input
-              v-model="apiConfig.geminiApiKey"
-              type="password"
-              placeholder="Enter your Gemini API key"
-              class="input-field"
-            />
+            <input v-model="apiConfig.geminiApiKey" type="password" placeholder="Enter your Gemini API key" class="input-field" />
           </div>
-
-          <!-- Model -->
           <div>
             <label class="block text-sm font-medium text-white/70 mb-2">Model</label>
             <select v-model="apiConfig.model" class="input-field">
@@ -130,50 +230,28 @@
               <option value="gemini-1.5-pro">Gemini 1.5 Pro - Stable pro model</option>
             </select>
           </div>
-
-          <!-- Temperature -->
           <div>
             <label class="block text-sm font-medium text-white/70 mb-2">
               Temperature: <span class="text-brand-light">{{ apiConfig.temperature }}</span>
             </label>
-            <input
-              v-model.number="apiConfig.temperature"
-              type="range"
-              min="0"
-              max="2"
-              step="0.1"
-              class="w-full accent-brand"
-            />
+            <input v-model.number="apiConfig.temperature" type="range" min="0" max="2" step="0.1" class="w-full accent-brand" />
             <div class="flex justify-between text-xs text-white/30 mt-1">
               <span>Precise (0)</span>
               <span>Creative (2)</span>
             </div>
           </div>
-
-          <!-- Max Tokens -->
           <div>
             <label class="block text-sm font-medium text-white/70 mb-2">Max Tokens</label>
-            <input
-              v-model.number="apiConfig.maxTokens"
-              type="number"
-              min="100"
-              max="8192"
-              class="input-field"
-            />
+            <input v-model.number="apiConfig.maxTokens" type="number" min="100" max="8192" class="input-field" />
           </div>
-
-          <button
-            @click="saveApiConfig"
-            :disabled="savingApiConfig"
-            class="btn-primary"
-          >
+          <button @click="saveApiConfig" :disabled="savingApiConfig" class="btn-primary">
             {{ savingApiConfig ? 'Saving...' : 'Save API Config' }}
           </button>
           <p v-if="apiConfigSaved" class="text-sm text-green-400 mt-2">API config saved successfully!</p>
         </div>
       </SettingsCard>
 
-      <!-- Card 3: User Management (admin only) -->
+      <!-- Card 4: User Management (admin only) -->
       <SettingsCard v-if="isAdmin" title="User Management" subtitle="Manage team access and roles">
         <template #icon>
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -235,7 +313,7 @@
         </div>
       </SettingsCard>
 
-      <!-- Card 4: Branding Reference -->
+      <!-- Card 5: Branding Reference -->
       <SettingsCard title="Branding Reference" subtitle="Extension color palette" :default-open="false">
         <template #icon>
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -245,10 +323,7 @@
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div v-for="color in brandColors" :key="color.name" class="text-center">
-            <div
-              class="w-full h-16 rounded-xl border border-white/10 mb-2"
-              :style="{ background: color.hex }"
-            />
+            <div class="w-full h-16 rounded-xl border border-white/10 mb-2" :style="{ background: color.hex }" />
             <p class="text-xs font-medium text-white/70">{{ color.name }}</p>
             <p class="text-xs text-white/30 font-mono">{{ color.hex }}</p>
           </div>
@@ -293,6 +368,24 @@ const savingApiConfig = ref(false)
 const promptsSaved = ref(false)
 const apiConfigSaved = ref(false)
 
+// Prompt template tabs
+const activePromptTab = ref('emailSystem')
+const promptTabs = [
+  { id: 'emailSystem', label: 'Email System' },
+  { id: 'linkedinSystem', label: 'LinkedIn System' },
+  { id: 'emailUser', label: 'Email User' },
+  { id: 'linkedinUser', label: 'LinkedIn User' },
+]
+const templateVars = [
+  'tone', 'maxWords', 'principles', 'angle',
+  'companyName', 'companyOverview', 'painPoints', 'valueProposition',
+  'competitors', 'differentiators', 'socialProof', 'callToAction',
+  'additionalContext', 'prospectContext',
+]
+const lbrace = '{{'
+const rbrace = '}}'
+function wrapVar(v: string) { return lbrace + v + rbrace }
+
 const prompts = reactive({
   principles: '',
   angles: [
@@ -302,6 +395,12 @@ const prompts = reactive({
   ],
   emailMaxWords: 200,
   linkedinMaxWords: 300,
+  emailSystemPrompt: '',
+  linkedinSystemPrompt: '',
+  emailUserPrompt: '',
+  linkedinUserPrompt: '',
+  emailNoContextPrompt: '',
+  linkedinNoContextPrompt: '',
 })
 
 const apiConfig = reactive({
@@ -345,6 +444,12 @@ onMounted(async () => {
       }
       prompts.emailMaxWords = data.prompts.emailMaxWords ?? 200
       prompts.linkedinMaxWords = data.prompts.linkedinMaxWords ?? 300
+      prompts.emailSystemPrompt = data.prompts.emailSystemPrompt || ''
+      prompts.linkedinSystemPrompt = data.prompts.linkedinSystemPrompt || ''
+      prompts.emailUserPrompt = data.prompts.emailUserPrompt || ''
+      prompts.linkedinUserPrompt = data.prompts.linkedinUserPrompt || ''
+      prompts.emailNoContextPrompt = data.prompts.emailNoContextPrompt || ''
+      prompts.linkedinNoContextPrompt = data.prompts.linkedinNoContextPrompt || ''
     }
 
     if (data.api_config && isAdmin.value) {
@@ -364,7 +469,7 @@ onMounted(async () => {
   }
 })
 
-// Save prompts
+// Save prompts (includes templates)
 async function savePrompts() {
   savingPrompts.value = true
   promptsSaved.value = false
@@ -378,6 +483,12 @@ async function savePrompts() {
           angles: prompts.angles,
           emailMaxWords: prompts.emailMaxWords,
           linkedinMaxWords: prompts.linkedinMaxWords,
+          emailSystemPrompt: prompts.emailSystemPrompt,
+          linkedinSystemPrompt: prompts.linkedinSystemPrompt,
+          emailUserPrompt: prompts.emailUserPrompt,
+          linkedinUserPrompt: prompts.linkedinUserPrompt,
+          emailNoContextPrompt: prompts.emailNoContextPrompt,
+          linkedinNoContextPrompt: prompts.linkedinNoContextPrompt,
         },
       },
     })
@@ -431,10 +542,7 @@ async function loadUsers() {
 
 async function updateUserRole(userId: string, role: string) {
   try {
-    await $fetch(`/api/users/${userId}`, {
-      method: 'PATCH',
-      body: { role },
-    })
+    await $fetch(`/api/users/${userId}`, { method: 'PATCH', body: { role } })
     const user = users.value.find(u => u.id === userId)
     if (user) user.role = role
   } catch (err) {

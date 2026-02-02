@@ -54,6 +54,13 @@ export interface AdminSettings {
   principles: string;
   emailMaxWords: number;
   linkedinMaxWords: number;
+  // Prompt templates (managed from dashboard)
+  emailSystemPrompt?: string;
+  linkedinSystemPrompt?: string;
+  emailUserPrompt?: string;
+  linkedinUserPrompt?: string;
+  emailNoContextPrompt?: string;
+  linkedinNoContextPrompt?: string;
 }
 
 // Combined Settings type for backward compatibility in prompt builders

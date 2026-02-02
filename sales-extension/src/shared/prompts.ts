@@ -1,27 +1,63 @@
 // AI Prompt Templates
+// Templates are fetched from the admin dashboard and use {{variable}} placeholders.
+// This module provides fallback templates and the variable substitution engine.
 
 import { EmailFormData, ScreenContext, Settings } from './types';
 
 /**
- * Builds the system instruction (static company knowledge + copywriting rules).
- * This stays constant across generations and goes into Gemini's systemInstruction field.
+ * Replace {{variable}} placeholders in a template string.
  */
-export const buildEmailSystemInstruction = (
-  formData: EmailFormData,
-  tone: string = 'professional',
-  settings?: Settings,
-  angleId?: string
-): string => {
-  const maxLength = settings?.emailMaxLength || 200;
-  const principles = settings?.principles || '';
-  const selectedAngle = settings?.angles?.find(a => a.id === angleId);
-  const anglePrompt = selectedAngle?.prompt || '';
+function fillTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? '');
+}
 
-  return `You are an expert sales copywriter specializing in B2B cold outreach. Your task is to generate personalized cold emails that feel human-written, not templated.
+/**
+ * Build the common variable map from form data and settings.
+ */
+function buildVarMap(
+  formData: EmailFormData,
+  tone: string,
+  settings?: Settings,
+  angleId?: string,
+  context?: ScreenContext
+): Record<string, string> {
+  const selectedAngle = settings?.angles?.find(a => a.id === angleId);
+  const principlesText = settings?.principles ? `GUIDING PRINCIPLES:\n${settings.principles}\n` : '';
+  const angleText = selectedAngle?.prompt ? `MESSAGE ANGLE:\n${selectedAngle.prompt}\n` : '';
+
+  const prospectParts: string[] = [];
+  if (context) {
+    if (context.url) prospectParts.push(`Profile/Page URL: ${context.url}`);
+    if (context.title) prospectParts.push(`Page Title: ${context.title}`);
+    if (context.content) prospectParts.push(`Profile/Page Content:\n${context.content.substring(0, 2000)}`);
+    if (context.selectedText) prospectParts.push(`Key highlighted text: ${context.selectedText}`);
+  }
+
+  return {
+    tone,
+    maxWords: String(settings?.emailMaxLength || 200),
+    principles: principlesText,
+    angle: angleText,
+    companyName: formData.companyName || '',
+    companyOverview: formData.companyOverview ? `Company Overview: ${formData.companyOverview}` : '',
+    painPoints: formData.painPoints || '',
+    valueProposition: formData.valueProposition || '',
+    competitors: formData.competitors ? `Primary Competitors: ${formData.competitors}` : '',
+    differentiators: formData.differentiators ? `Product Differentiators: ${formData.differentiators}` : '',
+    socialProof: formData.socialProof ? `SOCIAL PROOF:\n${formData.socialProof}` : '',
+    callToAction: formData.callToAction ? `CALL TO ACTION EXAMPLES:\n${formData.callToAction}` : '',
+    additionalContext: formData.additionalContext ? `ADDITIONAL CONTEXT:\n${formData.additionalContext}` : '',
+    prospectContext: prospectParts.join('\n'),
+  };
+}
+
+// ─── Fallback templates (used when no admin template is configured) ───
+
+const FALLBACK_EMAIL_SYSTEM = `You are an expert sales copywriter specializing in B2B cold outreach. Your task is to generate personalized cold emails that feel human-written, not templated.
 
 WRITING RULES:
-- Tone: ${tone}, conversational, and direct
-- Maximum ${maxLength} words
+- Tone: {{tone}}, conversational, and direct
+- Maximum {{maxWords}} words
 - Include a compelling subject line
 - Start with a personalized hook based on the prospect's context
 - One clear call-to-action
@@ -30,67 +66,116 @@ WRITING RULES:
 - Use the prospect's language/locale based on their location
 - Generate ONE complete email
 
-${principles ? `GUIDING PRINCIPLES:\n${principles}\n` : ''}${anglePrompt ? `MESSAGE ANGLE:\n${anglePrompt}\n` : ''}
+{{principles}}
+{{angle}}
 COMPANY KNOWLEDGE:
-Company/Product: ${formData.companyName}
-${formData.companyOverview ? `Company Overview: ${formData.companyOverview}` : ''}
+Company/Product: {{companyName}}
+{{companyOverview}}
 
 TARGET AUDIENCE & PAIN POINTS:
-${formData.painPoints}
+{{painPoints}}
 
 VALUE PROPOSITION:
-${formData.valueProposition}
+{{valueProposition}}
 
 DIFFERENTIATION:
-${formData.competitors ? `Primary Competitors: ${formData.competitors}` : ''}
-${formData.differentiators ? `Product Differentiators: ${formData.differentiators}` : ''}
+{{competitors}}
+{{differentiators}}
 
-${formData.socialProof ? `SOCIAL PROOF:\n${formData.socialProof}` : ''}
+{{socialProof}}
 
-${formData.callToAction ? `CALL TO ACTION EXAMPLES:\n${formData.callToAction}` : ''}
+{{callToAction}}
 
-${formData.additionalContext ? `ADDITIONAL CONTEXT:\n${formData.additionalContext}` : ''}
+{{additionalContext}}
 
 OUTPUT FORMAT:
 SUBJECT: [subject line]
 
 [email body]`;
+
+const FALLBACK_LINKEDIN_SYSTEM = `You are an expert at writing LinkedIn connection messages and InMails. Write messages that feel like genuine human outreach, not automated sequences.
+
+WRITING RULES:
+- Tone: {{tone}}, conversational, and personal
+- Maximum {{maxWords}} words
+- Maximum 2,000 characters
+- Start with a genuine connection point based on their profile
+- Be direct and respectful of their time
+- Focus on mutual benefit
+- Include a soft, low-pressure CTA
+- No hard selling
+- No filler phrases — start directly with the hook
+- Use the prospect's language/locale based on their location
+- Generate ONE complete LinkedIn message
+
+{{principles}}
+{{angle}}
+COMPANY KNOWLEDGE:
+Company/Product: {{companyName}}
+{{companyOverview}}
+
+TARGET AUDIENCE & PAIN POINTS:
+{{painPoints}}
+
+VALUE PROPOSITION:
+{{valueProposition}}
+
+{{socialProof}}
+
+{{callToAction}}
+
+{{additionalContext}}`;
+
+const FALLBACK_EMAIL_USER = `Generate a personalized cold email for this prospect:
+
+{{prospectContext}}
+
+Analyze the prospect's role, company, and industry from the context above. Use this to craft a personalized hook and select the most relevant value proposition and CTA.`;
+
+const FALLBACK_LINKEDIN_USER = `Generate a personalized LinkedIn message for this person:
+
+{{prospectContext}}
+
+Analyze their role, experience, and current company. Find a genuine connection point to open with.`;
+
+const FALLBACK_EMAIL_NO_CONTEXT = 'Generate a cold email for a generic prospect. Since no specific prospect context is available, write a compelling general outreach email based on the company knowledge provided.';
+
+const FALLBACK_LINKEDIN_NO_CONTEXT = 'Generate a LinkedIn connection message for a generic prospect. Since no specific profile context is available, write a compelling general outreach message based on the company knowledge provided.';
+
+// ─── Public API ───
+
+/**
+ * Builds the system instruction for email generation.
+ */
+export const buildEmailSystemInstruction = (
+  formData: EmailFormData,
+  tone: string = 'professional',
+  settings?: Settings,
+  angleId?: string
+): string => {
+  const vars = buildVarMap(formData, tone, settings, angleId);
+  vars.maxWords = String(settings?.emailMaxLength || 200);
+  const template = (settings as any)?.emailSystemPrompt || FALLBACK_EMAIL_SYSTEM;
+  return fillTemplate(template, vars);
 };
 
 /**
- * Builds the user message (prospect-specific context).
- * This is the dynamic part that changes per generation.
+ * Builds the user message for email generation.
  */
 export const buildEmailUserMessage = (
-  context?: ScreenContext
+  context?: ScreenContext,
+  settings?: Settings
 ): string => {
   if (!context) {
-    return 'Generate a cold email for a generic prospect. Since no specific prospect context is available, write a compelling general outreach email based on the company knowledge provided.';
+    return (settings as any)?.emailNoContextPrompt || FALLBACK_EMAIL_NO_CONTEXT;
   }
-
-  const parts: string[] = ['Generate a personalized cold email for this prospect:'];
-
-  if (context.url) {
-    parts.push(`Profile/Page URL: ${context.url}`);
-  }
-  if (context.title) {
-    parts.push(`Page Title: ${context.title}`);
-  }
-  if (context.content) {
-    parts.push(`Profile/Page Content:\n${context.content.substring(0, 2000)}`);
-  }
-  if (context.selectedText) {
-    parts.push(`Key highlighted text: ${context.selectedText}`);
-  }
-
-  parts.push('\nAnalyze the prospect\'s role, company, and industry from the context above. Use this to craft a personalized hook and select the most relevant value proposition and CTA.');
-
-  return parts.join('\n');
+  const vars = buildVarMap({} as EmailFormData, '', settings, undefined, context);
+  const template = (settings as any)?.emailUserPrompt || FALLBACK_EMAIL_USER;
+  return fillTemplate(template, vars);
 };
 
 /**
  * Legacy single-prompt fallback for email generation.
- * Used when the API doesn't support systemInstruction.
  */
 export const generateEmailPrompt = (
   formData: EmailFormData,
@@ -100,7 +185,7 @@ export const generateEmailPrompt = (
   angleId?: string
 ): string => {
   const systemPart = buildEmailSystemInstruction(formData, tone, settings, angleId);
-  const userPart = buildEmailUserMessage(context);
+  const userPart = buildEmailUserMessage(context, settings);
   return `${systemPart}\n\n---\n\n${userPart}`;
 };
 
@@ -113,72 +198,25 @@ export const buildLinkedInSystemInstruction = (
   settings?: Settings,
   angleId?: string
 ): string => {
-  const maxLength = settings?.linkedinMaxLength || 300;
-  const principles = settings?.principles || '';
-  const selectedAngle = settings?.angles?.find(a => a.id === angleId);
-  const anglePrompt = selectedAngle?.prompt || '';
-
-  return `You are an expert at writing LinkedIn connection messages and InMails. Write messages that feel like genuine human outreach, not automated sequences.
-
-WRITING RULES:
-- Tone: ${tone}, conversational, and personal
-- Maximum ${maxLength} words
-- Maximum 2,000 characters
-- Start with a genuine connection point based on their profile
-- Be direct and respectful of their time
-- Focus on mutual benefit
-- Include a soft, low-pressure CTA
-- No hard selling
-- No filler phrases — start directly with the hook
-- Use the prospect's language/locale based on their location
-- Generate ONE complete LinkedIn message
-
-${principles ? `GUIDING PRINCIPLES:\n${principles}\n` : ''}${anglePrompt ? `MESSAGE ANGLE:\n${anglePrompt}\n` : ''}
-COMPANY KNOWLEDGE:
-Company/Product: ${formData.companyName}
-${formData.companyOverview ? `Company Overview: ${formData.companyOverview}` : ''}
-
-TARGET AUDIENCE & PAIN POINTS:
-${formData.painPoints}
-
-VALUE PROPOSITION:
-${formData.valueProposition}
-
-${formData.socialProof ? `SOCIAL PROOF:\n${formData.socialProof}` : ''}
-
-${formData.callToAction ? `CALL TO ACTION EXAMPLES:\n${formData.callToAction}` : ''}
-
-${formData.additionalContext ? `ADDITIONAL CONTEXT:\n${formData.additionalContext}` : ''}`;
+  const vars = buildVarMap(formData, tone, settings, angleId);
+  vars.maxWords = String(settings?.linkedinMaxLength || 300);
+  const template = (settings as any)?.linkedinSystemPrompt || FALLBACK_LINKEDIN_SYSTEM;
+  return fillTemplate(template, vars);
 };
 
 /**
  * Builds the user message for LinkedIn messages.
  */
 export const buildLinkedInUserMessage = (
-  context?: ScreenContext
+  context?: ScreenContext,
+  settings?: Settings
 ): string => {
   if (!context) {
-    return 'Generate a LinkedIn connection message for a generic prospect. Since no specific profile context is available, write a compelling general outreach message based on the company knowledge provided.';
+    return (settings as any)?.linkedinNoContextPrompt || FALLBACK_LINKEDIN_NO_CONTEXT;
   }
-
-  const parts: string[] = ['Generate a personalized LinkedIn message for this person:'];
-
-  if (context.url) {
-    parts.push(`LinkedIn Profile URL: ${context.url}`);
-  }
-  if (context.title) {
-    parts.push(`Profile Title: ${context.title}`);
-  }
-  if (context.content) {
-    parts.push(`Profile Content:\n${context.content.substring(0, 2000)}`);
-  }
-  if (context.selectedText) {
-    parts.push(`Key highlighted text: ${context.selectedText}`);
-  }
-
-  parts.push('\nAnalyze their role, experience, and current company. Find a genuine connection point to open with.');
-
-  return parts.join('\n');
+  const vars = buildVarMap({} as EmailFormData, '', settings, undefined, context);
+  const template = (settings as any)?.linkedinUserPrompt || FALLBACK_LINKEDIN_USER;
+  return fillTemplate(template, vars);
 };
 
 /**
@@ -192,7 +230,7 @@ export const generateLinkedInPrompt = (
   angleId?: string
 ): string => {
   const systemPart = buildLinkedInSystemInstruction(formData, tone, settings, angleId);
-  const userPart = buildLinkedInUserMessage(context);
+  const userPart = buildLinkedInUserMessage(context, settings);
   return `${systemPart}\n\n---\n\n${userPart}`;
 };
 
