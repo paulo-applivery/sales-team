@@ -155,7 +155,7 @@ export const buildEmailSystemInstruction = (
 ): string => {
   const vars = buildVarMap(formData, tone, settings, angleId);
   vars.maxWords = String(settings?.emailMaxLength || 200);
-  const template = (settings as any)?.emailSystemPrompt || FALLBACK_EMAIL_SYSTEM;
+  const template = settings?.emailSystemPrompt || FALLBACK_EMAIL_SYSTEM;
   return fillTemplate(template, vars);
 };
 
@@ -167,10 +167,10 @@ export const buildEmailUserMessage = (
   settings?: Settings
 ): string => {
   if (!context) {
-    return (settings as any)?.emailNoContextPrompt || FALLBACK_EMAIL_NO_CONTEXT;
+    return settings?.emailNoContextPrompt || FALLBACK_EMAIL_NO_CONTEXT;
   }
   const vars = buildVarMap({} as EmailFormData, '', settings, undefined, context);
-  const template = (settings as any)?.emailUserPrompt || FALLBACK_EMAIL_USER;
+  const template = settings?.emailUserPrompt || FALLBACK_EMAIL_USER;
   return fillTemplate(template, vars);
 };
 
@@ -200,7 +200,7 @@ export const buildLinkedInSystemInstruction = (
 ): string => {
   const vars = buildVarMap(formData, tone, settings, angleId);
   vars.maxWords = String(settings?.linkedinMaxLength || 300);
-  const template = (settings as any)?.linkedinSystemPrompt || FALLBACK_LINKEDIN_SYSTEM;
+  const template = settings?.linkedinSystemPrompt || FALLBACK_LINKEDIN_SYSTEM;
   return fillTemplate(template, vars);
 };
 
@@ -212,10 +212,10 @@ export const buildLinkedInUserMessage = (
   settings?: Settings
 ): string => {
   if (!context) {
-    return (settings as any)?.linkedinNoContextPrompt || FALLBACK_LINKEDIN_NO_CONTEXT;
+    return settings?.linkedinNoContextPrompt || FALLBACK_LINKEDIN_NO_CONTEXT;
   }
   const vars = buildVarMap({} as EmailFormData, '', settings, undefined, context);
-  const template = (settings as any)?.linkedinUserPrompt || FALLBACK_LINKEDIN_USER;
+  const template = settings?.linkedinUserPrompt || FALLBACK_LINKEDIN_USER;
   return fillTemplate(template, vars);
 };
 

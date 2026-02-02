@@ -336,6 +336,12 @@ export const useStore = create<AppState>((set, get) => ({
               principles: admin.principles,
               emailMaxLength: admin.emailMaxWords,
               linkedinMaxLength: admin.linkedinMaxWords,
+              emailSystemPrompt: admin.emailSystemPrompt,
+              linkedinSystemPrompt: admin.linkedinSystemPrompt,
+              emailUserPrompt: admin.emailUserPrompt,
+              linkedinUserPrompt: admin.linkedinUserPrompt,
+              emailNoContextPrompt: admin.emailNoContextPrompt,
+              linkedinNoContextPrompt: admin.linkedinNoContextPrompt,
             },
           });
         }

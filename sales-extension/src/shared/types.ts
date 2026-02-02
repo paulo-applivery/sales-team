@@ -73,6 +73,13 @@ export interface Settings {
   principles?: string;
   emailMaxLength?: number;
   linkedinMaxLength?: number;
+  // Prompt templates (from backend)
+  emailSystemPrompt?: string;
+  linkedinSystemPrompt?: string;
+  emailUserPrompt?: string;
+  linkedinUserPrompt?: string;
+  emailNoContextPrompt?: string;
+  linkedinNoContextPrompt?: string;
 }
 
 export interface UserProfile {
