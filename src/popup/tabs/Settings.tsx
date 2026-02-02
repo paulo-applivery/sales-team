@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { SCRAPING_MODES, MODEL_OPTIONS } from '@shared/constants';
-import { isValidApiKey, maskApiKey } from '@shared/utils';
+import { isValidApiKey } from '@shared/utils';
 import InputField from '../components/InputField';
 import TextArea from '../components/TextArea';
 import Button from '../components/Button';
 
 export default function Settings() {
-  const { settings, setSettings, saveSettings, formData, setFormData } = useStore();
+  const { settings, saveSettings, formData, setFormData } = useStore();
   
   const [localSettings, setLocalSettings] = useState(settings || {
     apiKey: '',

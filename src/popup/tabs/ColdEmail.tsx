@@ -26,7 +26,7 @@ export default function ColdEmail() {
   const [tone, setTone] = useState('professional');
 
   const handleGenerate = async () => {
-    const prompt = generateEmailPrompt(formData, screenContext, tone);
+    const prompt = generateEmailPrompt(formData, screenContext || undefined, tone);
     await generateContent(prompt);
 
     // Save to history

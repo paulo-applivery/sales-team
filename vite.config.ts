@@ -1,10 +1,26 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { copyFileSync, cpSync, mkdirSync } from 'fs';
+
+// Plugin to copy public files to dist
+function copyPublicFiles() {
+  return {
+    name: 'copy-public-files',
+    closeBundle() {
+      // Copy manifest.json
+      copyFileSync('public/manifest.json', 'dist/manifest.json');
+      
+      // Copy icons directory
+      mkdirSync('dist/icons', { recursive: true });
+      cpSync('public/icons', 'dist/icons', { recursive: true });
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), copyPublicFiles()],
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),

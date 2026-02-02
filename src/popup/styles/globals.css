@@ -91,7 +91,7 @@ body {
   }
 
   .loading-spinner {
-    @apply inline-block w-5 h-5 border-3 border-secondary-300 
+    @apply inline-block w-5 h-5 border-2 border-secondary-300 
            border-t-primary-600 rounded-full animate-spin;
   }
 }

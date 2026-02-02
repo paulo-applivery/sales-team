@@ -26,7 +26,7 @@ export default function LinkedIn() {
   const [tone, setTone] = useState('professional');
 
   const handleGenerate = async () => {
-    const prompt = generateLinkedInPrompt(formData, screenContext, tone);
+    const prompt = generateLinkedInPrompt(formData, screenContext || undefined, tone);
     await generateContent(prompt);
 
     // Save to history
