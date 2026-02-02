@@ -15,8 +15,83 @@
     </div>
 
     <template v-else>
-      <!-- Card 1: Prompts -->
-      <SettingsCard title="Prompts" subtitle="Configure guiding principles and message angles" :default-open="true">
+      <!-- Card 1: Usage Stats (admin only) -->
+      <SettingsCard v-if="isAdmin" title="Usage Stats" subtitle="Token consumption and estimated costs per user" :default-open="true">
+        <template #icon>
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+          </svg>
+        </template>
+
+        <div class="space-y-4">
+          <!-- Period filter -->
+          <div class="flex gap-2">
+            <button
+              v-for="p in usagePeriods"
+              :key="p.value"
+              @click="usagePeriod = p.value; loadUsageStats()"
+              :class="[
+                'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
+                usagePeriod === p.value
+                  ? 'bg-brand text-white'
+                  : 'bg-navy-800 text-white/50 hover:text-white/70 border border-white/5'
+              ]"
+            >
+              {{ p.label }}
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="loadingUsage" class="text-center py-8 text-white/40">Loading usage stats...</div>
+
+          <!-- No data -->
+          <div v-else-if="usageStats.users.length === 0" class="text-center py-8 text-white/40">No usage data for this period</div>
+
+          <!-- Stats table -->
+          <div v-else class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-white/5">
+                  <th class="text-left py-3 px-2 text-white/40 font-medium">User</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Requests</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Prompt</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Output</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Total Tokens</th>
+                  <th class="text-right py-3 px-2 text-white/40 font-medium">Est. Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in usageStats.users" :key="u.id" class="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                  <td class="py-3 px-2">
+                    <div>
+                      <span class="text-white font-medium text-xs">{{ u.name }}</span>
+                      <p class="text-white/30 text-[10px]">{{ u.email }}</p>
+                    </div>
+                  </td>
+                  <td class="py-3 px-2 text-right text-white/60 tabular-nums">{{ u.totalRequests.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/40 tabular-nums text-xs">{{ u.promptTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/40 tabular-nums text-xs">{{ u.completionTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/60 tabular-nums">{{ u.totalTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-brand-light font-medium tabular-nums">{{ formatCost(u.totalCost) }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="border-t border-white/10">
+                  <td class="py-3 px-2 text-white/70 font-semibold text-xs">Total</td>
+                  <td class="py-3 px-2 text-right text-white/70 font-semibold tabular-nums">{{ usageStats.totals.totalRequests.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/50 tabular-nums text-xs">{{ usageStats.totals.promptTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/50 tabular-nums text-xs">{{ usageStats.totals.completionTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-white/70 font-semibold tabular-nums">{{ usageStats.totals.totalTokens.toLocaleString() }}</td>
+                  <td class="py-3 px-2 text-right text-brand-light font-bold tabular-nums">{{ formatCost(usageStats.totals.totalCost) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </SettingsCard>
+
+      <!-- Card 2: Prompts -->
+      <SettingsCard title="Prompts" subtitle="Configure guiding principles and message angles">
         <template #icon>
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -208,50 +283,7 @@
         </div>
       </SettingsCard>
 
-      <!-- Card 3: API Configuration (admin only) -->
-      <SettingsCard v-if="isAdmin" title="API Configuration" subtitle="Gemini API key and model settings">
-        <template #icon>
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
-          </svg>
-        </template>
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-white/70 mb-2">Gemini API Key</label>
-            <input v-model="apiConfig.geminiApiKey" type="password" placeholder="Enter your Gemini API key" class="input-field" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-white/70 mb-2">Model</label>
-            <select v-model="apiConfig.model" class="input-field">
-              <option value="gemini-2.0-flash">Gemini 2.0 Flash - Fast and capable</option>
-              <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash - Latest fast model (v1beta)</option>
-              <option value="gemini-2.5-pro-preview-05-06">Gemini 2.5 Pro - Best quality (v1beta)</option>
-              <option value="gemini-1.5-pro">Gemini 1.5 Pro - Stable pro model</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-white/70 mb-2">
-              Temperature: <span class="text-brand-light">{{ apiConfig.temperature }}</span>
-            </label>
-            <input v-model.number="apiConfig.temperature" type="range" min="0" max="2" step="0.1" class="w-full accent-brand" />
-            <div class="flex justify-between text-xs text-white/30 mt-1">
-              <span>Precise (0)</span>
-              <span>Creative (2)</span>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-white/70 mb-2">Max Tokens</label>
-            <input v-model.number="apiConfig.maxTokens" type="number" min="100" max="8192" class="input-field" />
-          </div>
-          <button @click="saveApiConfig" :disabled="savingApiConfig" class="btn-primary">
-            {{ savingApiConfig ? 'Saving...' : 'Save API Config' }}
-          </button>
-          <p v-if="apiConfigSaved" class="text-sm text-green-400 mt-2">API config saved successfully!</p>
-        </div>
-      </SettingsCard>
-
-      <!-- Card 4: User Management (admin only) -->
+      <!-- Card 3: User Management (admin only) -->
       <SettingsCard v-if="isAdmin" title="User Management" subtitle="Manage team access and roles">
         <template #icon>
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -313,82 +345,7 @@
         </div>
       </SettingsCard>
 
-      <!-- Card 5: Usage Stats (admin only) -->
-      <SettingsCard v-if="isAdmin" title="Usage Stats" subtitle="Token consumption and estimated costs per user">
-        <template #icon>
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-          </svg>
-        </template>
-
-        <div class="space-y-4">
-          <!-- Period filter -->
-          <div class="flex gap-2">
-            <button
-              v-for="p in usagePeriods"
-              :key="p.value"
-              @click="usagePeriod = p.value; loadUsageStats()"
-              :class="[
-                'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
-                usagePeriod === p.value
-                  ? 'bg-brand text-white'
-                  : 'bg-navy-800 text-white/50 hover:text-white/70 border border-white/5'
-              ]"
-            >
-              {{ p.label }}
-            </button>
-          </div>
-
-          <!-- Loading -->
-          <div v-if="loadingUsage" class="text-center py-8 text-white/40">Loading usage stats...</div>
-
-          <!-- No data -->
-          <div v-else-if="usageStats.users.length === 0" class="text-center py-8 text-white/40">No usage data for this period</div>
-
-          <!-- Stats table -->
-          <div v-else class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="border-b border-white/5">
-                  <th class="text-left py-3 px-2 text-white/40 font-medium">User</th>
-                  <th class="text-right py-3 px-2 text-white/40 font-medium">Requests</th>
-                  <th class="text-right py-3 px-2 text-white/40 font-medium">Prompt</th>
-                  <th class="text-right py-3 px-2 text-white/40 font-medium">Output</th>
-                  <th class="text-right py-3 px-2 text-white/40 font-medium">Total Tokens</th>
-                  <th class="text-right py-3 px-2 text-white/40 font-medium">Est. Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="u in usageStats.users" :key="u.id" class="border-b border-white/[0.03] hover:bg-white/[0.02]">
-                  <td class="py-3 px-2">
-                    <div>
-                      <span class="text-white font-medium text-xs">{{ u.name }}</span>
-                      <p class="text-white/30 text-[10px]">{{ u.email }}</p>
-                    </div>
-                  </td>
-                  <td class="py-3 px-2 text-right text-white/60 tabular-nums">{{ u.totalRequests.toLocaleString() }}</td>
-                  <td class="py-3 px-2 text-right text-white/40 tabular-nums text-xs">{{ u.promptTokens.toLocaleString() }}</td>
-                  <td class="py-3 px-2 text-right text-white/40 tabular-nums text-xs">{{ u.completionTokens.toLocaleString() }}</td>
-                  <td class="py-3 px-2 text-right text-white/60 tabular-nums">{{ u.totalTokens.toLocaleString() }}</td>
-                  <td class="py-3 px-2 text-right text-brand-light font-medium tabular-nums">{{ formatCost(u.totalCost) }}</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr class="border-t border-white/10">
-                  <td class="py-3 px-2 text-white/70 font-semibold text-xs">Total</td>
-                  <td class="py-3 px-2 text-right text-white/70 font-semibold tabular-nums">{{ usageStats.totals.totalRequests.toLocaleString() }}</td>
-                  <td class="py-3 px-2 text-right text-white/50 tabular-nums text-xs">{{ usageStats.totals.promptTokens.toLocaleString() }}</td>
-                  <td class="py-3 px-2 text-right text-white/50 tabular-nums text-xs">{{ usageStats.totals.completionTokens.toLocaleString() }}</td>
-                  <td class="py-3 px-2 text-right text-white/70 font-semibold tabular-nums">{{ usageStats.totals.totalTokens.toLocaleString() }}</td>
-                  <td class="py-3 px-2 text-right text-brand-light font-bold tabular-nums">{{ formatCost(usageStats.totals.totalCost) }}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      </SettingsCard>
-
-      <!-- Card 6: Branding Reference -->
+      <!-- Card 5: Branding Reference -->
       <SettingsCard title="Branding Reference" subtitle="Extension color palette" :default-open="false">
         <template #icon>
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -402,6 +359,49 @@
             <p class="text-xs font-medium text-white/70">{{ color.name }}</p>
             <p class="text-xs text-white/30 font-mono">{{ color.hex }}</p>
           </div>
+        </div>
+      </SettingsCard>
+
+      <!-- Card 6: API Configuration (admin only) -->
+      <SettingsCard v-if="isAdmin" title="API Configuration" subtitle="Gemini API key and model settings">
+        <template #icon>
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
+          </svg>
+        </template>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-white/70 mb-2">Gemini API Key</label>
+            <input v-model="apiConfig.geminiApiKey" type="password" placeholder="Enter your Gemini API key" class="input-field" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-white/70 mb-2">Model</label>
+            <select v-model="apiConfig.model" class="input-field">
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash - Fast and capable</option>
+              <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash - Latest fast model (v1beta)</option>
+              <option value="gemini-2.5-pro-preview-05-06">Gemini 2.5 Pro - Best quality (v1beta)</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro - Stable pro model</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-white/70 mb-2">
+              Temperature: <span class="text-brand-light">{{ apiConfig.temperature }}</span>
+            </label>
+            <input v-model.number="apiConfig.temperature" type="range" min="0" max="2" step="0.1" class="w-full accent-brand" />
+            <div class="flex justify-between text-xs text-white/30 mt-1">
+              <span>Precise (0)</span>
+              <span>Creative (2)</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-white/70 mb-2">Max Tokens</label>
+            <input v-model.number="apiConfig.maxTokens" type="number" min="100" max="8192" class="input-field" />
+          </div>
+          <button @click="saveApiConfig" :disabled="savingApiConfig" class="btn-primary">
+            {{ savingApiConfig ? 'Saving...' : 'Save API Config' }}
+          </button>
+          <p v-if="apiConfigSaved" class="text-sm text-green-400 mt-2">API config saved successfully!</p>
         </div>
       </SettingsCard>
     </template>
