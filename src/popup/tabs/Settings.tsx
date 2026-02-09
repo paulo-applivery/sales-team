@@ -18,6 +18,8 @@ export default function Settings() {
     login,
     logout,
     adminSettings,
+    apiKey,
+    setApiKey,
   } = useStore();
 
   const [localSettings, setLocalSettings] = useState(settings || {
@@ -172,6 +174,22 @@ export default function Settings() {
                 >
                   🔐 Sign in with Google
                 </Button>
+
+                <div style={{ marginTop: '1.5rem', borderTop: '1px solid hsl(var(--border))', paddingTop: '1rem' }}>
+                   <p style={{ fontSize: '0.75rem', marginBottom: '0.5rem', opacity: 0.8, textAlign: 'center' }}>
+                    — OR —
+                  </p>
+                  <InputField
+                    label="Gemini API Key (Alternative)"
+                    placeholder="Enter your Gemini API Key"
+                    value={apiKey || ''}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    type="password"
+                  />
+                   <p style={{ fontSize: '0.7rem', marginTop: '0.25rem', opacity: 0.6 }}>
+                    If provided, this key will be used instead of Google Login.
+                  </p>
+                </div>
               </div>
             )}
           </div>

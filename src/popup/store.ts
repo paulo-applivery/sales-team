@@ -12,7 +12,7 @@ import type {
   UserProfile,
   AdminSettings,
 } from '@shared/types';
-import { MESSAGE_TYPES } from '@shared/constants';
+import { MESSAGE_TYPES, STORAGE_KEYS } from '@shared/constants';
 
 interface AppState {
   // UI State
@@ -35,6 +35,7 @@ interface AppState {
   // Auth state
   user: UserProfile | null;
   token: string | null;
+  apiKey: string | null;
   isAuthenticated: boolean;
   authLoading: boolean;
 
@@ -64,6 +65,7 @@ interface AppState {
   captureScreenContext: () => Promise<void>;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  setApiKey: (key: string) => Promise<void>;
   checkAuth: () => Promise<void>;
   fetchAdminSettings: () => Promise<void>;
   reset: () => void;
@@ -94,6 +96,7 @@ export const useStore = create<AppState>((set, get) => ({
   settings: null,
   user: null,
   token: null,
+  apiKey: null,
   isAuthenticated: false,
   authLoading: false,
   adminSettings: null,
@@ -237,6 +240,22 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // Auth actions
+  setApiKey: async (key: string) => {
+    try {
+      await chrome.storage.local.set({ [STORAGE_KEYS.API_KEY]: key });
+      set({ apiKey: key });
+      
+      // If we have an API key, we are "authenticated" for the purpose of generation
+      if (key && key.length > 0) {
+        set({ isAuthenticated: true });
+      } else if (!get().token) {
+        set({ isAuthenticated: false });
+      }
+    } catch (error) {
+      console.error('Failed to save API key:', error);
+    }
+  },
+
   login: async () => {
     set({ authLoading: true, error: null });
     try {
@@ -273,9 +292,13 @@ export const useStore = create<AppState>((set, get) => ({
       await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.LOGOUT,
       });
+      
+      await chrome.storage.local.remove([STORAGE_KEYS.API_KEY]);
+      
       set({
         user: null,
         token: null,
+        apiKey: null,
         isAuthenticated: false,
         adminSettings: null,
         authLoading: false,
@@ -293,6 +316,13 @@ export const useStore = create<AppState>((set, get) => ({
         type: MESSAGE_TYPES.CHECK_AUTH,
       });
 
+      // Load API Key
+      const keyResult = await chrome.storage.local.get([STORAGE_KEYS.API_KEY]);
+      const apiKey = keyResult[STORAGE_KEYS.API_KEY];
+      if (apiKey) {
+        set({ apiKey });
+      }
+
       if (response.success && response.isAuthenticated) {
         set({
           user: response.user,
@@ -302,6 +332,13 @@ export const useStore = create<AppState>((set, get) => ({
         });
         // Fetch admin settings if authenticated
         await get().fetchAdminSettings();
+      } else if (apiKey) {
+        // Fallback to API Key auth
+        set({
+          isAuthenticated: true,
+          authLoading: false,
+          user: { name: 'Local User', email: 'Using API Key', id: 'local', role: 'regular', avatarUrl: '' }
+        });
       } else {
         set({
           user: null,

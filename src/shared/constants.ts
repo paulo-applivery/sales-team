@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   CUSTOM_PROMPTS: 'sales_ext_custom_prompts',
   AUTH_TOKEN: 'sales_ext_auth_token',
   AUTH_USER: 'sales_ext_auth_user',
+  API_KEY: 'sales_ext_api_key',
   ADMIN_SETTINGS: 'sales_ext_admin_settings',
   ADMIN_SETTINGS_TTL: 'sales_ext_admin_settings_ttl',
 } as const;

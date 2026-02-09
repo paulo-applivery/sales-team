@@ -102,6 +102,57 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 async function handleGenerateContent(payload: any): Promise<ApiResponse> {
   const { systemInstruction, userMessage, prompt } = payload;
 
+  // Check for API Key first
+  const keyResult = await chrome.storage.local.get([STORAGE_KEYS.API_KEY]);
+  const apiKey = keyResult[STORAGE_KEYS.API_KEY];
+
+  if (apiKey) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      
+      const geminiPayload: any = {
+        contents: [{
+          parts: [{ text: userMessage || prompt || '' }]
+        }]
+      };
+
+      if (systemInstruction) {
+        // For simple compatibility, we'll prepend system instruction if possible or just rely on the model.
+        // gemini-1.5-flash supports system_instruction at top level.
+        geminiPayload.system_instruction = {
+          parts: [{ text: systemInstruction }]
+        };
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiPayload)
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: { message: 'API request failed' } }));
+        throw new Error(error.error?.message || `Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      return {
+        success: true,
+        content,
+        variants: [] 
+      };
+
+    } catch (error: any) {
+       console.error('Gemini API Generation error:', error);
+       return {
+         success: false,
+         error: error.message || 'Failed to generate content with API Key',
+       };
+    }
+  }
+
   // Get auth token
   const result = await chrome.storage.local.get([STORAGE_KEYS.AUTH_TOKEN]);
   const token = result[STORAGE_KEYS.AUTH_TOKEN];
