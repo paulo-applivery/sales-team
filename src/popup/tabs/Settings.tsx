@@ -185,16 +185,14 @@ export default function Settings() {
 
                 <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '1.5rem' }}>
                   <p style={{ fontSize: '0.75rem', marginBottom: '1rem', opacity: 0.6 }}>
-                    Legacy Login (Currently Unavailable)
+                    Or sign in with Google (Requires Client ID configuration)
                   </p>
                   <Button
                     onClick={login}
                     loading={authLoading}
-                    style={{ width: '100%', opacity: 0.5 }}
-                    disabled={true}
-                    title="Please use API Key above"
+                    style={{ width: '100%' }}
                   >
-                    🔐 Sign in with Google (Disabled)
+                    🔐 Sign in with Google
                   </Button>
                 </div>
               </div>
