@@ -164,31 +164,38 @@ export default function Settings() {
               </div>
             ) : (
               <div>
-                <p style={{ fontSize: '0.875rem', marginBottom: '1rem', opacity: 0.7 }}>
-                  Sign in with your @applivery.com Google account to use the extension.
-                </p>
-                <Button
-                  onClick={login}
-                  loading={authLoading}
-                  style={{ width: '100%' }}
-                >
-                  🔐 Sign in with Google
-                </Button>
-
-                <div style={{ marginTop: '1.5rem', borderTop: '1px solid hsl(var(--border))', paddingTop: '1rem' }}>
-                   <p style={{ fontSize: '0.75rem', marginBottom: '0.5rem', opacity: 0.8, textAlign: 'center' }}>
-                    — OR —
-                  </p>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div className="info-banner primary" style={{ marginBottom: '1rem' }}>
+                    <p style={{ fontSize: '0.813rem', margin: 0 }}>
+                      ℹ️ <strong>Recommended:</strong> Use your Gemini API Key directly.
+                    </p>
+                  </div>
+                  
                   <InputField
-                    label="Gemini API Key (Alternative)"
-                    placeholder="Enter your Gemini API Key"
+                    label="Gemini API Key"
+                    placeholder="Enter your Gemini API Key (starts with AI...)"
                     value={apiKey || ''}
                     onChange={(e) => setApiKey(e.target.value)}
                     type="password"
                   />
-                   <p style={{ fontSize: '0.7rem', marginTop: '0.25rem', opacity: 0.6 }}>
-                    If provided, this key will be used instead of Google Login.
+                  <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.7 }}>
+                    Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'hsl(var(--primary))' }}>Google AI Studio</a>.
                   </p>
+                </div>
+
+                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '1.5rem' }}>
+                  <p style={{ fontSize: '0.75rem', marginBottom: '1rem', opacity: 0.6 }}>
+                    Legacy Login (Currently Unavailable)
+                  </p>
+                  <Button
+                    onClick={login}
+                    loading={authLoading}
+                    style={{ width: '100%', opacity: 0.5 }}
+                    disabled={true}
+                    title="Please use API Key above"
+                  >
+                    🔐 Sign in with Google (Disabled)
+                  </Button>
                 </div>
               </div>
             )}
