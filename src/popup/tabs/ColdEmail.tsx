@@ -44,7 +44,8 @@ export default function ColdEmail() {
   const { isAuthenticated } = useStore();
   const hasBusinessInfo = !!formData.companyName && !!formData.valueProposition;
   const isConfigured = isAuthenticated && hasBusinessInfo;
-  const businessWarning = adminSettings?.businessInfoWarning || '⚠️ Please add your business information (Company Name & Value Proposition) in Settings';
+  const businessWarning = adminSettings?.businessInfoWarning?.trim()
+    || '⚠️ Please add your business information (Company Name & Value Proposition) in Settings';
 
   return (
     <div className="tabs-content active">

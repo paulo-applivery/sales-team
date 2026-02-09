@@ -46,7 +46,8 @@ export default function LinkedIn() {
   const isConfigured = isAuthenticated && hasBusinessInfo;
   const charCount = countCharacters(generatedContent);
   const maxWords = settings?.linkedinMaxLength || 300;
-  const businessWarning = adminSettings?.businessInfoWarning || '⚠️ Please add your business information (Company Name & Value Proposition) in Settings';
+  const businessWarning = adminSettings?.businessInfoWarning?.trim()
+    || '⚠️ Please add your business information (Company Name & Value Proposition) in Settings';
 
   return (
     <div className="tabs-content active">
