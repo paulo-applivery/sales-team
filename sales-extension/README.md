@@ -70,6 +70,8 @@ npm run type-check
 ```
 sales-extension/
 ├── public/
+│   ├── manifest.json          # Chrome extension manifest
+│   └── icons/                 # Extension icons
 ├── src/
 │   ├── popup/                 # Main UI
 │   │   ├── App.tsx           # Root component
