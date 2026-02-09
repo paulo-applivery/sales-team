@@ -83,6 +83,16 @@ const defaultFormData: EmailFormData = {
   differentiators: '',
 };
 
+const defaultSettings: Settings = {
+  scrapingMode: 'full',
+  theme: 'light',
+  autoSave: true,
+  angles: [],
+  principles: '',
+  emailMaxLength: 200,
+  linkedinMaxLength: 300,
+};
+
 export const useStore = create<AppState>((set, get) => ({
   // Initial State
   activeTab: 'email',
@@ -136,16 +146,19 @@ export const useStore = create<AppState>((set, get) => ({
       });
 
       if (response.success && response.settings) {
-        set({ settings: response.settings });
+        set({ settings: { ...defaultSettings, ...response.settings } });
 
         // Also load defaults into form if they exist
         const defaults = await chrome.storage.local.get(['sales_ext_defaults']);
         if (defaults.sales_ext_defaults) {
           set({ formData: defaults.sales_ext_defaults });
         }
+      } else {
+        set({ settings: defaultSettings });
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
+      set({ settings: defaultSettings });
     }
   },
 
@@ -364,24 +377,22 @@ export const useStore = create<AppState>((set, get) => ({
         set({ adminSettings: admin });
 
         // Merge admin settings into the combined settings object for prompt builders
-        const currentSettings = get().settings;
-        if (currentSettings) {
-          set({
-            settings: {
-              ...currentSettings,
-              angles: admin.angles,
-              principles: admin.principles,
-              emailMaxLength: admin.emailMaxWords,
-              linkedinMaxLength: admin.linkedinMaxWords,
-              emailSystemPrompt: admin.emailSystemPrompt,
-              linkedinSystemPrompt: admin.linkedinSystemPrompt,
-              emailUserPrompt: admin.emailUserPrompt,
-              linkedinUserPrompt: admin.linkedinUserPrompt,
-              emailNoContextPrompt: admin.emailNoContextPrompt,
-              linkedinNoContextPrompt: admin.linkedinNoContextPrompt,
-            },
-          });
-        }
+        const currentSettings = get().settings || defaultSettings;
+        set({
+          settings: {
+            ...currentSettings,
+            angles: admin.angles,
+            principles: admin.principles,
+            emailMaxLength: admin.emailMaxWords,
+            linkedinMaxLength: admin.linkedinMaxWords,
+            emailSystemPrompt: admin.emailSystemPrompt,
+            linkedinSystemPrompt: admin.linkedinSystemPrompt,
+            emailUserPrompt: admin.emailUserPrompt,
+            linkedinUserPrompt: admin.linkedinUserPrompt,
+            emailNoContextPrompt: admin.emailNoContextPrompt,
+            linkedinNoContextPrompt: admin.linkedinNoContextPrompt,
+          },
+        });
       }
     } catch (error) {
       console.error('Failed to fetch admin settings:', error);
