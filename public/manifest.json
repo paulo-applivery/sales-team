@@ -23,7 +23,7 @@
     "identity"
   ],
   "oauth2": {
-    "client_id": "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+    "client_id": "459550601924-gipbi7dun46a0np5mvhrmodmnrq0o0uc.apps.googleusercontent.com",
     "scopes": ["openid", "email", "profile"]
   },
   "host_permissions": [
