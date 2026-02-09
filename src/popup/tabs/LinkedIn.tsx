@@ -17,6 +17,7 @@ export default function LinkedIn() {
     addToHistory,
     captureScreenContext,
     settings,
+    adminSettings,
   } = useStore();
 
   const [tone] = useState('professional');
@@ -45,6 +46,7 @@ export default function LinkedIn() {
   const isConfigured = isAuthenticated && hasBusinessInfo;
   const charCount = countCharacters(generatedContent);
   const maxWords = settings?.linkedinMaxLength || 300;
+  const businessWarning = adminSettings?.businessInfoWarning || '⚠️ Please add your business information (Company Name & Value Proposition) in Settings';
 
   return (
     <div className="tabs-content active">
@@ -95,7 +97,7 @@ export default function LinkedIn() {
       {isAuthenticated && !hasBusinessInfo && (
         <div className="info-banner warning">
           <p style={{ fontSize: '0.813rem', margin: 0 }}>
-            ⚠️ Please add your business information (Company Name & Value Proposition) in Settings
+            {businessWarning}
           </p>
         </div>
       )}

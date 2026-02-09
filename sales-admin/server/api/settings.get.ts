@@ -116,6 +116,7 @@ Analyze the prospect's role, company, and industry from the context above. Use t
 Analyze their role, experience, and current company. Find a genuine connection point to open with.`,
       emailNoContextPrompt: 'Generate a cold email for a generic prospect. Since no specific prospect context is available, write a compelling general outreach email based on the company knowledge provided.',
       linkedinNoContextPrompt: 'Generate a LinkedIn connection message for a generic prospect. Since no specific profile context is available, write a compelling general outreach message based on the company knowledge provided.',
+      businessInfoWarning: '⚠️ Please add your business information (Company Name & Value Proposition) in Settings',
     },
     api_config: {
       geminiApiKey: '',

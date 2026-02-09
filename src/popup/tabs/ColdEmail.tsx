@@ -17,6 +17,7 @@ export default function ColdEmail() {
     addToHistory,
     captureScreenContext,
     settings,
+    adminSettings,
   } = useStore();
 
   const [tone] = useState('professional');
@@ -43,6 +44,7 @@ export default function ColdEmail() {
   const { isAuthenticated } = useStore();
   const hasBusinessInfo = !!formData.companyName && !!formData.valueProposition;
   const isConfigured = isAuthenticated && hasBusinessInfo;
+  const businessWarning = adminSettings?.businessInfoWarning || '⚠️ Please add your business information (Company Name & Value Proposition) in Settings';
 
   return (
     <div className="tabs-content active">
@@ -91,7 +93,7 @@ export default function ColdEmail() {
       {isAuthenticated && !hasBusinessInfo && (
         <div className="info-banner warning">
           <p style={{ fontSize: '0.813rem', margin: 0 }}>
-            ⚠️ Please add your business information (Company Name & Value Proposition) in Settings
+            {businessWarning}
           </p>
         </div>
       )}

@@ -229,6 +229,16 @@
             </div>
           </div>
 
+          <div>
+            <label class="block text-sm font-medium text-white/70 mb-2">Business Info Warning</label>
+            <textarea
+              v-model="prompts.businessInfoWarning"
+              :readonly="!isAdmin"
+              rows="2"
+              class="input-field"
+            />
+          </div>
+
           <!-- Save button -->
           <button
             v-if="isAdmin"
@@ -547,6 +557,7 @@ const prompts = reactive({
   linkedinUserPrompt: '',
   emailNoContextPrompt: '',
   linkedinNoContextPrompt: '',
+  businessInfoWarning: '⚠️ Please add your business information (Company Name & Value Proposition) in Settings',
 })
 
 const apiConfig = reactive({
@@ -644,6 +655,7 @@ onMounted(async () => {
       prompts.linkedinUserPrompt = data.prompts.linkedinUserPrompt || ''
       prompts.emailNoContextPrompt = data.prompts.emailNoContextPrompt || ''
       prompts.linkedinNoContextPrompt = data.prompts.linkedinNoContextPrompt || ''
+      prompts.businessInfoWarning = data.prompts.businessInfoWarning || '⚠️ Please add your business information (Company Name & Value Proposition) in Settings'
     }
 
     if (data.api_config && isAdmin.value) {
@@ -684,6 +696,7 @@ async function savePrompts() {
           linkedinUserPrompt: prompts.linkedinUserPrompt,
           emailNoContextPrompt: prompts.emailNoContextPrompt,
           linkedinNoContextPrompt: prompts.linkedinNoContextPrompt,
+          businessInfoWarning: prompts.businessInfoWarning,
         },
       },
     })

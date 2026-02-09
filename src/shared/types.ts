@@ -54,6 +54,7 @@ export interface AdminSettings {
   principles: string;
   emailMaxWords: number;
   linkedinMaxWords: number;
+  businessInfoWarning?: string;
   // Prompt templates (managed from dashboard)
   emailSystemPrompt?: string;
   linkedinSystemPrompt?: string;

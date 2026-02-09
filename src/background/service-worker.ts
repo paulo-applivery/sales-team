@@ -333,6 +333,7 @@ async function handleFetchAdminSettings(): Promise<any> {
       principles: data.prompts?.principles || '',
       emailMaxWords: data.prompts?.emailMaxWords || 200,
       linkedinMaxWords: data.prompts?.linkedinMaxWords || 300,
+      businessInfoWarning: data.prompts?.businessInfoWarning || '⚠️ Please add your business information (Company Name & Value Proposition) in Settings',
     };
 
     await chrome.storage.local.set({
