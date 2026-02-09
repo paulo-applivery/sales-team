@@ -311,12 +311,13 @@ async function handleFetchAdminSettings(): Promise<any> {
     const authResult = await chrome.storage.local.get([STORAGE_KEYS.AUTH_TOKEN]);
     const token = authResult[STORAGE_KEYS.AUTH_TOKEN];
 
-    if (!token) {
-      throw new Error('Not authenticated');
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(`${ADMIN_API_URL}/api/settings`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers,
     });
 
     if (!response.ok) {

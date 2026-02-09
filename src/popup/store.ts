@@ -352,6 +352,7 @@ export const useStore = create<AppState>((set, get) => ({
           authLoading: false,
           user: { name: 'Local User', email: 'Using API Key', id: 'local', role: 'regular', avatarUrl: '' }
         });
+        await get().fetchAdminSettings();
       } else {
         set({
           user: null,

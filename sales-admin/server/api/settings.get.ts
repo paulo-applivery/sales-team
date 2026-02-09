@@ -1,10 +1,10 @@
 // Get all settings
 
-import { requireAuth } from '~/server/utils/session'
+import { getSession } from '~/server/utils/session'
 import { getDB, query } from '~/server/utils/db-dev'
 
 export default defineEventHandler(async (event) => {
-  await requireAuth(event)
+  const user = await getSession(event)
 
   const db = await getDB(event)
 
@@ -126,8 +126,13 @@ Analyze their role, experience, and current company. Find a genuine connection p
     },
   }
 
+  const prompts = { ...defaults.prompts, ...settings.prompts }
+  if (!user) {
+    return { prompts }
+  }
+
   return {
-    prompts: { ...defaults.prompts, ...settings.prompts },
+    prompts,
     api_config: { ...defaults.api_config, ...settings.api_config },
   }
 })
