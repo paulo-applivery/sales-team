@@ -1,7 +1,24 @@
 // Content Script - Screen Context Scraping
+//
+// IMPORTANT: Content scripts in MV3 cannot use ES module imports.
+// Vite code-splits shared imports into separate chunks that content scripts
+// cannot load. All types and constants must be inlined here.
 
-import { ScreenContext } from '@shared/types';
-import { MESSAGE_TYPES } from '@shared/constants';
+interface ScreenContext {
+  url: string;
+  title: string;
+  content: string;
+  metadata: {
+    author?: string;
+    date?: string;
+    domain: string;
+  };
+  selectedText?: string;
+  timestamp: number;
+}
+
+// Inlined from @shared/constants — must match MESSAGE_TYPES.GET_CONTEXT
+const MSG_GET_CONTEXT = 'GET_CONTEXT';
 
 // Main scraper function
 function getPageContext(): ScreenContext {
@@ -32,26 +49,33 @@ function getPageContext(): ScreenContext {
   };
 }
 
-// Extract readable content from the page
+// Extract readable content from the page without cloning the DOM
 function extractPageContent(): string {
-  // Remove script, style, and other non-content elements
-  const elementsToRemove = ['script', 'style', 'noscript', 'iframe', 'nav', 'header', 'footer'];
-  const clone = document.cloneNode(true) as Document;
-  
-  elementsToRemove.forEach(tag => {
-    const elements = clone.getElementsByTagName(tag);
-    Array.from(elements).forEach(el => el.remove());
-  });
+  const tagsToSkip = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'IFRAME', 'NAV', 'HEADER', 'FOOTER', 'SVG']);
 
-  // Get text content
-  const text = clone.body?.innerText || '';
-  
-  // Clean up multiple spaces and newlines
-  return text
-    .replace(/\s+/g, ' ')
-    .replace(/\n+/g, '\n')
+  function walkNode(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent?.trim() || '';
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    const el = node as Element;
+    if (tagsToSkip.has(el.tagName)) return '';
+    if (el.getAttribute('aria-hidden') === 'true') return '';
+
+    const parts: string[] = [];
+    for (const child of Array.from(el.childNodes)) {
+      const text = walkNode(child);
+      if (text) parts.push(text);
+    }
+    return parts.join(' ');
+  }
+
+  const raw = walkNode(document.body);
+  return raw
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
     .trim()
-    .substring(0, 5000); // Limit to first 5000 characters
+    .substring(0, 10000);
 }
 
 // Get meta tag content
@@ -60,14 +84,39 @@ function getMetaContent(name: string): string | undefined {
   return meta?.getAttribute('content') || undefined;
 }
 
-// Site-specific handlers
+// LinkedIn-specific context extraction with resilient selectors
 function getLinkedInContext(): Partial<ScreenContext> {
-  // LinkedIn-specific scraping logic
-  const profileName = document.querySelector('.text-heading-xlarge')?.textContent?.trim();
-  const headline = document.querySelector('.text-body-medium')?.textContent?.trim();
-  
+  // Try multiple selector strategies for profile name
+  const profileName =
+    document.querySelector('.text-heading-xlarge')?.textContent?.trim() ||
+    document.querySelector('h1.inline')?.textContent?.trim() ||
+    document.querySelector('[data-anonymize="person-name"]')?.textContent?.trim() ||
+    document.querySelector('h1')?.textContent?.trim();
+
+  // Try multiple selector strategies for headline
+  const headline =
+    document.querySelector('.text-body-medium.break-words')?.textContent?.trim() ||
+    document.querySelector('.text-body-medium')?.textContent?.trim() ||
+    document.querySelector('[data-anonymize="headline"]')?.textContent?.trim();
+
+  // Try to get experience/about sections
+  const aboutSection =
+    document.querySelector('#about + .display-flex .inline-show-more-text')?.textContent?.trim() ||
+    document.querySelector('section.pv-about-section')?.textContent?.trim() ||
+    '';
+
+  const parts = [
+    profileName ? `Name: ${profileName}` : '',
+    headline ? `Headline: ${headline}` : '',
+    aboutSection ? `About: ${aboutSection}` : '',
+  ].filter(Boolean);
+
+  // Append general page content as fallback
+  const pageContent = extractPageContent();
+  parts.push(pageContent);
+
   return {
-    content: `Profile: ${profileName || 'Unknown'}\nHeadline: ${headline || 'N/A'}\n${extractPageContent()}`,
+    content: parts.join('\n'),
   };
 }
 
@@ -82,15 +131,18 @@ function getContextBySite(domain: string): ScreenContext {
   return baseContext;
 }
 
-// Listen for messages from popup
+// Listen for messages from service worker
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-  if (request.type === MESSAGE_TYPES.GET_CONTEXT) {
-    const domain = window.location.hostname;
-    const context = getContextBySite(domain);
-    sendResponse({ success: true, context });
+  if (request.type === MSG_GET_CONTEXT) {
+    try {
+      const domain = window.location.hostname;
+      const context = getContextBySite(domain);
+      sendResponse({ success: true, context });
+    } catch (error) {
+      sendResponse({ success: false, error: String(error) });
+    }
   }
-  return true; // Keep the message channel open for async response
+  return true;
 });
 
-// Initialize
 console.log('Sales Extension: Content script loaded');

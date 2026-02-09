@@ -38,53 +38,54 @@ export default function PromptFree() {
     }
   };
 
+  const { isAuthenticated } = useStore();
+  const isConfigured = isAuthenticated;
   const isFormValid = customPrompt.trim().length > 0;
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="tabs-content active">
       {/* Info Banner */}
-      <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
-        <p className="text-sm font-medium text-primary-900">
+      <div className="info-banner primary">
+        <p style={{ fontSize: '0.875rem', fontWeight: 500, margin: 0 }}>
           ✨ Free-form AI Assistant
         </p>
-        <p className="text-xs text-primary-700 mt-1">
+        <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>
           Ask anything! Your business context will be automatically included.
         </p>
       </div>
 
-      {/* Context Toggle */}
-      <div className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg">
-        <div>
-          <p className="text-sm font-medium text-secondary-900">
-            Include Screen Context
-          </p>
-          <p className="text-xs text-secondary-600 mt-0.5">
-            Add webpage data to your prompt
+      {/* Configuration Warning */}
+      {!isConfigured && (
+        <div className="info-banner warning">
+          <p style={{ fontSize: '0.813rem', margin: 0 }}>
+            ⚠️ Please sign in with Google in Settings to generate content
           </p>
         </div>
-        <button
-          onClick={() => setIncludeContext(!includeContext)}
-          className={`
-            relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-            ${includeContext ? 'bg-primary-600' : 'bg-secondary-300'}
-          `}
-        >
-          <span
-            className={`
-              inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-              ${includeContext ? 'translate-x-6' : 'translate-x-1'}
-            `}
+      )}
+
+      {/* Context Toggle */}
+      <div className="toggle-container">
+        <div className="toggle-info">
+          <div className="toggle-title">Include Screen Context</div>
+          <div className="toggle-desc">Add webpage data to your prompt</div>
+        </div>
+        <label className="toggle-switch">
+          <input
+            type="checkbox"
+            checked={includeContext}
+            onChange={(e) => setIncludeContext(e.target.checked)}
           />
-        </button>
+          <span className="toggle-slider"></span>
+        </label>
       </div>
 
       {/* Screen Context Preview */}
       {includeContext && screenContext && (
-        <div className="bg-secondary-50 rounded-lg p-3">
-          <p className="text-xs font-medium text-secondary-900 mb-2">
+        <div className="card" style={{ padding: '0.75rem', marginBottom: '1rem' }}>
+          <p style={{ fontSize: '0.75rem', fontWeight: 500, margin: 0, marginBottom: '0.5rem' }}>
             📄 Current Context:
           </p>
-          <p className="text-xs text-secondary-700 line-clamp-2">
+          <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {screenContext.title} - {screenContext.url}
           </p>
         </div>
@@ -101,9 +102,9 @@ export default function PromptFree() {
       />
 
       {/* Example Prompts */}
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-secondary-700">Quick Examples:</p>
-        <div className="flex flex-wrap gap-2">
+      <div style={{ marginBottom: '1rem' }}>
+        <p style={{ fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.5rem' }}>Quick Examples:</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           {[
             'Write a follow-up email',
             'Create a meeting agenda',
@@ -113,7 +114,13 @@ export default function PromptFree() {
             <button
               key={example}
               onClick={() => setCustomPrompt(example)}
-              className="px-3 py-1 text-xs bg-secondary-100 text-secondary-700 rounded-full hover:bg-secondary-200 transition-colors"
+              className="secondary"
+              style={{ 
+                padding: '0.375rem 0.75rem', 
+                height: 'auto', 
+                fontSize: '0.75rem',
+                borderRadius: '9999px'
+              }}
             >
               {example}
             </button>
@@ -125,16 +132,16 @@ export default function PromptFree() {
       <Button
         onClick={handleGenerate}
         loading={isLoading}
-        disabled={!isFormValid || isLoading}
-        className="w-full"
+        disabled={!isConfigured || !isFormValid || isLoading}
+        style={{ width: '100%' }}
       >
         Generate Content
       </Button>
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="error-message" style={{ marginTop: '1rem' }}>
+          {error}
         </div>
       )}
 

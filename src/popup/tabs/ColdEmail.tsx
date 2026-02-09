@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store';
-import { generateEmailPrompt } from '@shared/prompts';
+import { buildEmailSystemInstruction, buildEmailUserMessage } from '@shared/prompts';
 import { generateId } from '@shared/utils';
-import InputField from '../components/InputField';
-import TextArea from '../components/TextArea';
 import Button from '../components/Button';
 import OutputDisplay from '../components/OutputDisplay';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -11,23 +9,23 @@ import LoadingSpinner from '../components/LoadingSpinner';
 export default function ColdEmail() {
   const {
     formData,
-    setFormData,
     screenContext,
     isLoading,
     error,
     generatedContent,
-    variants,
-    selectedVariant,
-    setSelectedVariant,
     generateContent,
     addToHistory,
+    captureScreenContext,
+    settings,
   } = useStore();
 
-  const [tone, setTone] = useState('professional');
+  const [tone] = useState('professional');
+  const [selectedAngleId, setSelectedAngleId] = useState<string>('');
 
   const handleGenerate = async () => {
-    const prompt = generateEmailPrompt(formData, screenContext || undefined, tone);
-    await generateContent(prompt);
+    const systemInstruction = buildEmailSystemInstruction(formData, tone, settings || undefined, selectedAngleId || undefined);
+    const userMessage = buildEmailUserMessage(screenContext || undefined);
+    await generateContent({ systemInstruction, userMessage });
 
     // Save to history
     if (generatedContent) {
@@ -35,7 +33,6 @@ export default function ColdEmail() {
         id: generateId(),
         type: 'email',
         content: generatedContent,
-        variants,
         timestamp: Date.now(),
         formData,
         screenContext: screenContext || undefined,
@@ -43,96 +40,106 @@ export default function ColdEmail() {
     }
   };
 
-  const isFormValid = formData.companyName && formData.valueProposition;
+  const { isAuthenticated } = useStore();
+  const hasBusinessInfo = !!formData.companyName && !!formData.valueProposition;
+  const isConfigured = isAuthenticated && hasBusinessInfo;
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="tabs-content active">
       {/* Screen Context Indicator */}
-      {screenContext && (
-        <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
-          <p className="text-xs font-medium text-primary-900">
-            📄 Context captured from: {screenContext.title}
+      {screenContext ? (
+        <div className="info-banner primary" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <p style={{ fontSize: '0.813rem', margin: 0 }}>
+              📄 Context captured from: <strong>{screenContext.title}</strong>
+            </p>
+            <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>
+              {screenContext.url}
+            </p>
+          </div>
+          <button
+            onClick={captureScreenContext}
+            className="secondary"
+            style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', height: 'auto', whiteSpace: 'nowrap', flexShrink: 0 }}
+          >
+            Refresh
+          </button>
+        </div>
+      ) : (
+        <div className="info-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'hsl(var(--muted) / 0.3)', borderColor: 'hsl(var(--border))' }}>
+          <p style={{ fontSize: '0.813rem', margin: 0 }}>
+            No page context detected
           </p>
-          <p className="text-xs text-primary-700 mt-1">
-            {screenContext.url}
+          <button
+            onClick={captureScreenContext}
+            className="secondary"
+            style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', height: 'auto', whiteSpace: 'nowrap', flexShrink: 0 }}
+          >
+            Capture
+          </button>
+        </div>
+      )}
+
+      {/* Configuration Warnings */}
+      {!isAuthenticated && (
+        <div className="info-banner warning">
+          <p style={{ fontSize: '0.813rem', margin: 0 }}>
+            ⚠️ Please sign in with Google in Settings to generate content
+          </p>
+        </div>
+      )}
+      {isAuthenticated && !hasBusinessInfo && (
+        <div className="info-banner warning">
+          <p style={{ fontSize: '0.813rem', margin: 0 }}>
+            ⚠️ Please add your business information (Company Name & Value Proposition) in Settings
           </p>
         </div>
       )}
 
-      {/* Form Fields */}
-      <InputField
-        label="Company/Product Name *"
-        placeholder="e.g., Acme Corp"
-        value={formData.companyName}
-        onChange={(e) => setFormData({ companyName: e.target.value })}
-      />
-
-      <TextArea
-        label="Value Proposition *"
-        placeholder="What unique value do you offer?"
-        value={formData.valueProposition}
-        onChange={(e) => setFormData({ valueProposition: e.target.value })}
-      />
-
-      <TextArea
-        label="Customer Pain Points"
-        placeholder="What problems does your target customer face?"
-        value={formData.painPoints}
-        onChange={(e) => setFormData({ painPoints: e.target.value })}
-        helperText="Helps create a more targeted message"
-      />
-
-      <TextArea
-        label="Call-to-Action"
-        placeholder="e.g., Schedule a 15-minute demo"
-        value={formData.callToAction}
-        onChange={(e) => setFormData({ callToAction: e.target.value })}
-      />
-
-      <TextArea
-        label="Social Proof"
-        placeholder="Testimonials, metrics, or case studies"
-        value={formData.socialProof}
-        onChange={(e) => setFormData({ socialProof: e.target.value })}
-      />
-
-      {/* Tone Selector */}
-      <div className="mb-4">
-        <label className="label">Tone</label>
-        <div className="flex gap-2">
-          {['professional', 'casual', 'urgent', 'friendly'].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTone(t)}
-              className={`
-                px-3 py-2 text-sm rounded-md transition-colors capitalize
-                ${
-                  tone === t
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-secondary-200 text-secondary-700 hover:bg-secondary-300'
-                }
-              `}
-            >
-              {t}
-            </button>
-          ))}
+      {/* Angle Selector */}
+      {settings?.angles && settings.angles.length > 0 ? (
+        <div style={{ marginBottom: '1rem' }}>
+          <label className="label">Message Angle *</label>
+          <select
+            value={selectedAngleId}
+            onChange={(e) => setSelectedAngleId(e.target.value)}
+            className="input-field"
+          >
+            <option value="">Select an approach...</option>
+            {settings.angles.map((angle) => (
+              <option key={angle.id} value={angle.id}>
+                {angle.name}
+              </option>
+            ))}
+          </select>
+          {selectedAngleId && (
+            <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.7 }}>
+              {settings.angles.find(a => a.id === selectedAngleId)?.prompt}
+            </p>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="info-banner" style={{ marginBottom: '1rem', backgroundColor: 'hsl(var(--muted) / 0.3)', borderColor: 'hsl(var(--border))' }}>
+          <p style={{ fontSize: '0.813rem', margin: 0 }}>
+            💡 Configure message angles in Settings → Advanced Prompt Settings
+          </p>
+        </div>
+      )}
 
       {/* Generate Button */}
       <Button
         onClick={handleGenerate}
         loading={isLoading}
-        disabled={!isFormValid || isLoading}
-        className="w-full"
+        disabled={!isConfigured || isLoading}
+        style={{ width: '100%' }}
       >
-        Generate Cold Email
+        ✉️ Generate Cold Email
       </Button>
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="error-message" style={{ marginTop: '1rem' }}>
+          {error}
         </div>
       )}
 
@@ -141,12 +148,7 @@ export default function ColdEmail() {
 
       {/* Output Display */}
       {!isLoading && generatedContent && (
-        <OutputDisplay
-          content={variants[selectedVariant] || generatedContent}
-          variants={variants}
-          selectedVariant={selectedVariant}
-          onVariantChange={setSelectedVariant}
-        />
+        <OutputDisplay content={generatedContent} />
       )}
     </div>
   );

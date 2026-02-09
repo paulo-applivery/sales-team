@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store';
-import { generateLinkedInPrompt } from '@shared/prompts';
+import { buildLinkedInSystemInstruction, buildLinkedInUserMessage } from '@shared/prompts';
 import { generateId, countCharacters } from '@shared/utils';
-import InputField from '../components/InputField';
-import TextArea from '../components/TextArea';
 import Button from '../components/Button';
 import OutputDisplay from '../components/OutputDisplay';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -11,23 +9,23 @@ import LoadingSpinner from '../components/LoadingSpinner';
 export default function LinkedIn() {
   const {
     formData,
-    setFormData,
     screenContext,
     isLoading,
     error,
     generatedContent,
-    variants,
-    selectedVariant,
-    setSelectedVariant,
     generateContent,
     addToHistory,
+    captureScreenContext,
+    settings,
   } = useStore();
 
-  const [tone, setTone] = useState('professional');
+  const [tone] = useState('professional');
+  const [selectedAngleId, setSelectedAngleId] = useState<string>('');
 
   const handleGenerate = async () => {
-    const prompt = generateLinkedInPrompt(formData, screenContext || undefined, tone);
-    await generateContent(prompt);
+    const systemInstruction = buildLinkedInSystemInstruction(formData, tone, settings || undefined, selectedAngleId || undefined);
+    const userMessage = buildLinkedInUserMessage(screenContext || undefined);
+    await generateContent({ systemInstruction, userMessage });
 
     // Save to history
     if (generatedContent) {
@@ -35,7 +33,6 @@ export default function LinkedIn() {
         id: generateId(),
         type: 'linkedin',
         content: generatedContent,
-        variants,
         timestamp: Date.now(),
         formData,
         screenContext: screenContext || undefined,
@@ -43,82 +40,100 @@ export default function LinkedIn() {
     }
   };
 
-  const isFormValid = formData.companyName && formData.valueProposition;
+  const { isAuthenticated } = useStore();
+  const hasBusinessInfo = !!formData.companyName && !!formData.valueProposition;
+  const isConfigured = isAuthenticated && hasBusinessInfo;
   const charCount = countCharacters(generatedContent);
+  const maxWords = settings?.linkedinMaxLength || 300;
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="tabs-content active">
       {/* LinkedIn Context Indicator */}
-      {screenContext?.url?.includes('linkedin.com') && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-xs font-medium text-blue-900">
-            💼 LinkedIn profile detected
+      {screenContext ? (
+        <div className="info-banner primary" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <p style={{ fontSize: '0.813rem', margin: 0 }}>
+              {screenContext.url?.includes('linkedin.com')
+                ? '💼 LinkedIn profile detected'
+                : `📄 Context from: ${screenContext.title}`}
+            </p>
+            <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>
+              {screenContext.url}
+            </p>
+          </div>
+          <button
+            onClick={captureScreenContext}
+            className="secondary"
+            style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', height: 'auto', whiteSpace: 'nowrap', flexShrink: 0 }}
+          >
+            Refresh
+          </button>
+        </div>
+      ) : (
+        <div className="info-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'hsl(var(--muted) / 0.3)', borderColor: 'hsl(var(--border))' }}>
+          <p style={{ fontSize: '0.813rem', margin: 0 }}>
+            No page context detected
           </p>
-          <p className="text-xs text-blue-700 mt-1">
-            Message will be optimized for LinkedIn format
+          <button
+            onClick={captureScreenContext}
+            className="secondary"
+            style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', height: 'auto', whiteSpace: 'nowrap', flexShrink: 0 }}
+          >
+            Capture
+          </button>
+        </div>
+      )}
+
+      {/* Configuration Warnings */}
+      {!isAuthenticated && (
+        <div className="info-banner warning">
+          <p style={{ fontSize: '0.813rem', margin: 0 }}>
+            ⚠️ Please sign in with Google in Settings to generate content
+          </p>
+        </div>
+      )}
+      {isAuthenticated && !hasBusinessInfo && (
+        <div className="info-banner warning">
+          <p style={{ fontSize: '0.813rem', margin: 0 }}>
+            ⚠️ Please add your business information (Company Name & Value Proposition) in Settings
           </p>
         </div>
       )}
 
-      {/* Form Fields - Same as Email but condensed */}
-      <InputField
-        label="Company/Product Name *"
-        placeholder="e.g., Acme Corp"
-        value={formData.companyName}
-        onChange={(e) => setFormData({ companyName: e.target.value })}
-      />
-
-      <TextArea
-        label="Value Proposition *"
-        placeholder="Keep it brief for LinkedIn"
-        value={formData.valueProposition}
-        onChange={(e) => setFormData({ valueProposition: e.target.value })}
-        rows={2}
-      />
-
-      <TextArea
-        label="Customer Pain Points"
-        placeholder="Key problems you solve"
-        value={formData.painPoints}
-        onChange={(e) => setFormData({ painPoints: e.target.value })}
-        rows={2}
-      />
-
-      <TextArea
-        label="Call-to-Action"
-        placeholder="e.g., Would you be open to a quick chat?"
-        value={formData.callToAction}
-        onChange={(e) => setFormData({ callToAction: e.target.value })}
-        rows={2}
-      />
-
-      {/* Tone Selector */}
-      <div className="mb-4">
-        <label className="label">Tone</label>
-        <div className="flex gap-2">
-          {['professional', 'casual', 'friendly'].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTone(t)}
-              className={`
-                px-3 py-2 text-sm rounded-md transition-colors capitalize
-                ${
-                  tone === t
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-secondary-200 text-secondary-700 hover:bg-secondary-300'
-                }
-              `}
-            >
-              {t}
-            </button>
-          ))}
+      {/* Angle Selector */}
+      {settings?.angles && settings.angles.length > 0 ? (
+        <div style={{ marginBottom: '1rem' }}>
+          <label className="label">Message Angle *</label>
+          <select
+            value={selectedAngleId}
+            onChange={(e) => setSelectedAngleId(e.target.value)}
+            className="input-field"
+          >
+            <option value="">Select an approach...</option>
+            {settings.angles.map((angle) => (
+              <option key={angle.id} value={angle.id}>
+                {angle.name}
+              </option>
+            ))}
+          </select>
+          {selectedAngleId && (
+            <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.7 }}>
+              {settings.angles.find(a => a.id === selectedAngleId)?.prompt}
+            </p>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="info-banner" style={{ marginBottom: '1rem', backgroundColor: 'hsl(var(--muted) / 0.3)', borderColor: 'hsl(var(--border))' }}>
+          <p style={{ fontSize: '0.813rem', margin: 0 }}>
+            💡 Configure message angles in Settings → Advanced Prompt Settings
+          </p>
+        </div>
+      )}
 
-      {/* LinkedIn Character Limit Warning */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-        <p className="text-xs text-yellow-800">
-          ℹ️ LinkedIn messages have a 2,000 character limit
+      {/* LinkedIn Info */}
+      <div className="info-banner" style={{ backgroundColor: 'hsl(var(--muted) / 0.3)', borderColor: 'hsl(var(--border))' }}>
+        <p style={{ fontSize: '0.75rem', margin: 0 }}>
+          ℹ️ LinkedIn messages: max {maxWords} words / 2,000 characters
         </p>
       </div>
 
@@ -126,16 +141,16 @@ export default function LinkedIn() {
       <Button
         onClick={handleGenerate}
         loading={isLoading}
-        disabled={!isFormValid || isLoading}
-        className="w-full"
+        disabled={!isConfigured || isLoading}
+        style={{ width: '100%' }}
       >
-        Generate LinkedIn Message
+        💼 Generate LinkedIn Message
       </Button>
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="error-message" style={{ marginTop: '1rem' }}>
+          {error}
         </div>
       )}
 
@@ -145,22 +160,17 @@ export default function LinkedIn() {
       {/* Output Display with Character Count */}
       {!isLoading && generatedContent && (
         <>
-          <div className="flex justify-between items-center px-2">
-            <span className="text-xs text-secondary-600">
-              {charCount} / 2,000 characters
+          <div className="char-count" style={{ marginTop: '1rem' }}>
+            <span>
+              {charCount} / 2,000 chars
             </span>
             {charCount > 2000 && (
-              <span className="text-xs text-red-600 font-medium">
+              <span style={{ color: 'hsl(45 93% 47%)' }}>
                 ⚠️ Exceeds limit
               </span>
             )}
           </div>
-          <OutputDisplay
-            content={variants[selectedVariant] || generatedContent}
-            variants={variants}
-            selectedVariant={selectedVariant}
-            onVariantChange={setSelectedVariant}
-          />
+          <OutputDisplay content={generatedContent} />
         </>
       )}
     </div>

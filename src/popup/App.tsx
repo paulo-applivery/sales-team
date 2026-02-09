@@ -7,12 +7,13 @@ import PromptFree from './tabs/PromptFree';
 import Settings from './tabs/Settings';
 
 function App() {
-  const { activeTab, loadSettings, captureScreenContext } = useStore();
+  const { activeTab, loadSettings, captureScreenContext, checkAuth } = useStore();
 
   useEffect(() => {
     // Initialize app
     loadSettings();
     captureScreenContext();
+    checkAuth();
   }, []);
 
   const renderTab = () => {
